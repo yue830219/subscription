@@ -1,4 +1,4 @@
-const CACHE_NAME = 'subscription-manager-v1';
+const CACHE_NAME = 'subscription-manager-v2';
 const APP_ASSETS = [
   './index.html',
   './manifest-subscription.json',
@@ -22,4 +22,29 @@ self.addEventListener('fetch', event => {
     caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
     return response;
   }).catch(() => caches.match(event.request)));
+});
+
+self.addEventListener('push', event => {
+  if (!event.data) return;
+  const data = event.data.json();
+  event.waitUntil(self.registration.showNotification(data.title || '訂閱付款提醒', {
+    body: data.body || '',
+    icon: './assets/subscription-icon-192.png',
+    badge: './assets/subscription-icon-192.png',
+    tag: data.tag,
+    data: { url: data.url || './' }
+  }));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || './', self.location.href).href;
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async clients => {
+    for (const client of clients) {
+      if (new URL(client.url).origin !== self.location.origin) continue;
+      if ('navigate' in client) await client.navigate(targetUrl);
+      return client.focus();
+    }
+    return self.clients.openWindow(targetUrl);
+  }));
 });

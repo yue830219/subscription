@@ -675,6 +675,29 @@
                 </div>
             </div>
             <div class="space-y-3">
+                <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">付款通知</h4>
+                <div class="rounded-2xl border border-darkBorder bg-darkBg p-4 space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div><div id="payment-notification-title" class="text-sm font-bold text-white">付款前 7 天通知</div><div id="payment-notification-status" class="mt-1 text-xs text-gray-500">尚未開啟</div></div>
+                        <label class="relative inline-flex cursor-pointer items-center">
+                            <input type="checkbox" id="payment-notification-toggle" class="peer sr-only" onchange="togglePaymentNotifications(this.checked)">
+                            <span class="h-7 w-12 rounded-full bg-gray-600 transition peer-checked:bg-accentBlue"></span>
+                            <span class="pointer-events-none absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition peer-checked:translate-x-5"></span>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between gap-3 rounded-xl bg-darkCardSecondary px-3 py-2.5">
+                        <span class="text-sm text-gray-300">提前通知</span>
+                        <select id="payment-notification-days" onchange="savePaymentNotificationDays(this.value)" class="bg-darkBg rounded-lg px-3 py-1.5 text-sm font-bold text-white focus:outline-none">
+                            <option value="7">7 天前</option>
+                            <option value="3">3 天前</option>
+                            <option value="1">1 天前</option>
+                        </select>
+                    </div>
+                    <button type="button" id="payment-notification-test" onclick="sendPaymentNotificationTest()" class="hidden w-full rounded-xl bg-darkCardSecondary py-2.5 text-sm font-bold text-white hover:bg-[#303035]">傳送測試通知</button>
+                    <p class="text-xs text-gray-500">iPhone 需加入主畫面並允許通知。</p>
+                </div>
+            </div>
+            <div class="space-y-3">
                 <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">資料備份</h4>
                 <input id="app-data-import-file" type="file" accept="application/json,.json" onchange="importAppData(event)" class="hidden">
                 <form autocomplete="on" onsubmit="event.preventDefault()" class="rounded-2xl border border-darkBorder bg-darkBg p-4">
@@ -860,6 +883,7 @@
 
         // Deploy cloudflare-worker.js to Cloudflare Workers and paste the worker URL here.
         const CLOUD_BACKUP_WORKER_URL = 'https://backup.yue830219.workers.dev/';
+        const NOTIFICATION_WORKER_URL = 'https://subscription-notifications.yue830219.workers.dev';
 
         function loadCardLayout() {
             try {
@@ -928,6 +952,8 @@
             if (location.protocol === 'https:' && 'serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./service-worker.js').catch(error => console.warn('離線快取啟用失敗。', error));
             }
+            refreshPaymentNotificationSettings();
+            openSubscriptionFromNotification();
             renderAnalysis();
             loadUsdToTwdRate();
             setInterval(refreshProjectedPaymentDates, 60000);
@@ -1174,6 +1200,181 @@
             modal.classList.remove('hidden'); modal.classList.add('flex');
         }
 
+        let paymentNotificationSyncTimer = null;
+
+        function paymentNotificationsSupported() {
+            return location.protocol === 'https:' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+        }
+
+        function getPaymentNotificationDays() {
+            const days = Number(localStorage.getItem('subscription_notification_days'));
+            return [7, 3, 1].includes(days) ? days : 7;
+        }
+
+        function savePaymentNotificationDays(value) {
+            const days = Number(value);
+            if (![7, 3, 1].includes(days)) return;
+            localStorage.setItem('subscription_notification_days', String(days));
+            const title = document.getElementById('payment-notification-title');
+            if (title) title.textContent = `付款前 ${days} 天通知`;
+            refreshPaymentNotificationSettings();
+            schedulePaymentNotificationSync();
+        }
+
+        function getNotificationDeviceId() {
+            let id = localStorage.getItem('subscription_notification_device_id');
+            if (!/^[a-f0-9-]{36}$/i.test(id || '')) {
+                id = crypto.randomUUID();
+                localStorage.setItem('subscription_notification_device_id', id);
+            }
+            return id;
+        }
+
+        function base64UrlToUint8Array(value) {
+            const padded = value + '='.repeat((4 - value.length % 4) % 4);
+            const binary = atob(padded.replace(/-/g, '+').replace(/_/g, '/'));
+            return Uint8Array.from(binary, character => character.charCodeAt(0));
+        }
+
+        async function requestNotificationWorker(action, body = null) {
+            const suffix = action === 'vapid-public-key' ? action : `device/${getNotificationDeviceId()}/${action}`;
+            const response = await fetch(`${NOTIFICATION_WORKER_URL}/${suffix}`, {
+                method: body === null ? 'GET' : 'POST',
+                headers: body === null ? undefined : { 'Content-Type': 'application/json' },
+                body: body === null ? undefined : JSON.stringify(body)
+            });
+            const result = await response.json().catch(() => null);
+            if (!response.ok || !result || result.error) throw new Error(result?.error || `通知服務 HTTP ${response.status}`);
+            return result;
+        }
+
+        function setPaymentNotificationUi(enabled, message) {
+            const toggle = document.getElementById('payment-notification-toggle');
+            const status = document.getElementById('payment-notification-status');
+            const test = document.getElementById('payment-notification-test');
+            if (!toggle || !status || !test) return;
+            toggle.checked = enabled;
+            status.textContent = message;
+            status.className = `mt-1 text-xs ${enabled ? 'text-emerald-400' : 'text-gray-500'}`;
+            test.classList.toggle('hidden', !enabled);
+        }
+
+        async function refreshPaymentNotificationSettings() {
+            const notificationDays = getPaymentNotificationDays();
+            const daysSelect = document.getElementById('payment-notification-days');
+            const title = document.getElementById('payment-notification-title');
+            if (daysSelect) {
+                daysSelect.value = String(notificationDays);
+                refreshCustomSelect(daysSelect);
+            }
+            if (title) title.textContent = `付款前 ${notificationDays} 天通知`;
+            if (!paymentNotificationsSupported()) {
+                setPaymentNotificationUi(false, '此瀏覽器或開啟方式不支援推播');
+                return;
+            }
+            const registration = await navigator.serviceWorker.ready.catch(() => null);
+            const subscription = await registration?.pushManager.getSubscription().catch(() => null);
+            const enabled = Notification.permission === 'granted' && Boolean(subscription) && localStorage.getItem('subscription_notifications_enabled') === 'true';
+            setPaymentNotificationUi(enabled, enabled ? `已開啟，付款前 ${notificationDays} 天提醒` : Notification.permission === 'denied' ? '通知權限已被拒絕' : '尚未開啟');
+            if (enabled) syncPaymentNotifications().catch(error => console.warn('付款通知排程同步失敗。', error));
+        }
+
+        async function togglePaymentNotifications(shouldEnable) {
+            const toggle = document.getElementById('payment-notification-toggle');
+            toggle.disabled = true;
+            try {
+                if (!shouldEnable) {
+                    const registration = await navigator.serviceWorker.ready;
+                    const subscription = await registration.pushManager.getSubscription();
+                    await requestNotificationWorker('unsubscribe', {}).catch(() => null);
+                    await subscription?.unsubscribe();
+                    localStorage.removeItem('subscription_notifications_enabled');
+                    setPaymentNotificationUi(false, '已關閉');
+                    return;
+                }
+                if (!paymentNotificationsSupported()) throw new Error('請使用 HTTPS，並將 App 加入主畫面後再開啟通知。');
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') throw new Error('未取得通知權限，請到 iPhone「設定 → 通知」允許此 App。');
+                const keyResult = await requestNotificationWorker('vapid-public-key');
+                if (!keyResult.publicKey) throw new Error('通知 Worker 尚未設定 VAPID 金鑰。');
+                const registration = await navigator.serviceWorker.ready;
+                let subscription = await registration.pushManager.getSubscription();
+                if (!subscription) subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64UrlToUint8Array(keyResult.publicKey) });
+                await requestNotificationWorker('register', { subscription: subscription.toJSON() });
+                localStorage.setItem('subscription_notifications_enabled', 'true');
+                await syncPaymentNotifications();
+                setPaymentNotificationUi(true, `已開啟，付款前 ${getPaymentNotificationDays()} 天提醒`);
+                await showAppAlert('付款通知已開啟。你可以按「傳送測試通知」確認。', '通知設定完成');
+            } catch (error) {
+                localStorage.removeItem('subscription_notifications_enabled');
+                setPaymentNotificationUi(false, '開啟失敗');
+                await showAppAlert(error.message || '無法開啟通知。', '通知設定失敗');
+            } finally {
+                toggle.disabled = false;
+            }
+        }
+
+        function buildPaymentNotificationReminders() {
+            const now = Date.now();
+            const notificationDays = getPaymentNotificationDays();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const reminders = [];
+            const seen = new Set();
+            subscriptions.filter(sub => sub.isActive !== false).forEach(sub => {
+                for (let offset = 0; offset <= 12; offset++) {
+                    const month = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+                    getSubscriptionOccurrencesForMonth(sub, month.getFullYear(), month.getMonth()).forEach(paymentDate => {
+                        const paymentKey = toDateKey(paymentDate);
+                        const id = `${sub.id}-${paymentKey}`;
+                        if (seen.has(id)) return;
+                        seen.add(id);
+                        const notifyAt = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), paymentDate.getDate() - notificationDays, 9, 0, 0);
+                        const daysAway = Math.round((paymentDate.getTime() - today.getTime()) / 86400000);
+                        if (daysAway < 0 || (notifyAt.getTime() <= now && daysAway > notificationDays)) return;
+                        reminders.push({
+                            id,
+                            scheduledAt: Math.max(notifyAt.getTime(), now + 5000),
+                            title: `${sub.name || '訂閱'} 即將付款`,
+                            body: `${formatDisplayDate(paymentKey)} 將付款 ${subscriptionAmountDetail(sub)}`,
+                            tag: `subscription-${id}`,
+                            url: new URL(`./?subscription=${encodeURIComponent(sub.id)}`, location.href).href
+                        });
+                    });
+                }
+            });
+            return reminders.sort((a, b) => a.scheduledAt - b.scheduledAt);
+        }
+
+        async function syncPaymentNotifications() {
+            if (!paymentNotificationsSupported() || localStorage.getItem('subscription_notifications_enabled') !== 'true' || Notification.permission !== 'granted') return;
+            await requestNotificationWorker('sync', { reminders: buildPaymentNotificationReminders() });
+        }
+
+        function schedulePaymentNotificationSync() {
+            if (localStorage.getItem('subscription_notifications_enabled') !== 'true') return;
+            clearTimeout(paymentNotificationSyncTimer);
+            paymentNotificationSyncTimer = setTimeout(() => syncPaymentNotifications().catch(error => console.warn('付款通知排程同步失敗。', error)), 500);
+        }
+
+        async function sendPaymentNotificationTest() {
+            try {
+                await requestNotificationWorker('test', { url: new URL('./', location.href).href });
+                showAppAlert('測試通知已送出，請查看通知中心。', '測試完成');
+            } catch (error) {
+                showAppAlert(error.message || '測試通知傳送失敗。', '測試失敗');
+            }
+        }
+
+        function openSubscriptionFromNotification() {
+            const url = new URL(location.href);
+            const subscriptionId = url.searchParams.get('subscription');
+            if (!subscriptionId || !subscriptions.some(sub => sub.id === subscriptionId)) return;
+            url.searchParams.delete('subscription');
+            history.replaceState(null, '', url);
+            requestAnimationFrame(() => openSubscriptionDetail(subscriptionId));
+        }
+
         function saveData() {
             try {
                 localStorage.setItem('app_subscriptions', JSON.stringify(subscriptions));
@@ -1181,6 +1382,7 @@
                 localStorage.setItem('app_categories', JSON.stringify(categories));
                 localStorage.setItem('app_payment_icons', JSON.stringify(paymentMethodIcons));
                 localStorage.setItem('app_category_icons', JSON.stringify(categoryIcons));
+                schedulePaymentNotificationSync();
                 return true;
             } catch (error) {
                 console.error('無法儲存資料。', error);
