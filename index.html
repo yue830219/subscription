@@ -190,6 +190,15 @@
                 <option value="cycle">依計費週期群組</option>
                 <option value="upcoming">即將到來</option>
             </select>
+            <select id="list-compare" onchange="saveListComparison(this.value)" aria-label="比較平均花費" class="shrink-0 bg-darkCard rounded-xl px-3 py-2 text-xs text-gray-300 border border-darkBorder/50 focus:outline-none focus:ring-1 focus:ring-accentBlue">
+                <option value="">比較</option>
+                <option value="day">每天</option>
+                <option value="week">每週</option>
+                <option value="month">每月</option>
+                <option value="quarter">每季</option>
+                <option value="halfyear">每半年</option>
+                <option value="year">每年</option>
+            </select>
             <select id="filter-category" onchange="renderList()" aria-label="篩選類別" class="shrink-0 bg-darkCard rounded-xl px-3 py-2 text-xs text-gray-300 border border-darkBorder/50 focus:outline-none focus:ring-1 focus:ring-accentBlue"></select>
             <select id="filter-payment" onchange="renderList()" aria-label="篩選付款方式" class="shrink-0 bg-darkCard rounded-xl px-3 py-2 text-xs text-gray-300 border border-darkBorder/50 focus:outline-none focus:ring-1 focus:ring-accentBlue"></select>
             <select id="filter-cycle" onchange="renderList()" aria-label="篩選週期" class="shrink-0 bg-darkCard rounded-xl px-3 py-2 text-xs text-gray-300 border border-darkBorder/50 focus:outline-none focus:ring-1 focus:ring-accentBlue"></select>
@@ -940,6 +949,7 @@
             populateDropdowns();
             document.getElementById('default-currency').value = defaultCurrency;
             document.getElementById('display-currency').value = displayCurrency;
+            document.getElementById('list-compare').value = getListComparison();
             initSubscriptionSyncEmail();
             setupCustomSelects();
             renderList();
@@ -2059,8 +2069,11 @@
         }
 
         function setAnalysisPeriod(period) {
+            if (!['month', 'year'].includes(period) || analysisPeriod === period) return;
+            const pageScrollY = window.scrollY;
             analysisPeriod = period;
             renderAnalysis();
+            requestAnimationFrame(() => window.scrollTo({ top: pageScrollY, left: window.scrollX, behavior: 'auto' }));
         }
 
         function selectAnalysisMonth(year, month) {
@@ -2139,8 +2152,14 @@
             if (analysisPeriod === 'month') {
                 const selectedMonthKey = `${detailYear}-${detailMonth}`;
                 requestAnimationFrame(() => {
-                    document.querySelector(`#analysis-trend-chart [data-analysis-month="${selectedMonthKey}"]`)?.scrollIntoView({ block: 'nearest', inline: 'center' });
-                    document.querySelector(`#analysis-month-tabs [data-analysis-month="${selectedMonthKey}"]`)?.scrollIntoView({ block: 'nearest', inline: 'center' });
+                    const centerHorizontally = (container, item) => {
+                        if (!container || !item) return;
+                        container.scrollLeft = item.offsetLeft - (container.clientWidth - item.offsetWidth) / 2;
+                    };
+                    const trendChart = document.getElementById('analysis-trend-chart');
+                    const monthTabs = document.getElementById('analysis-month-tabs');
+                    centerHorizontally(trendChart, trendChart?.querySelector(`[data-analysis-month="${selectedMonthKey}"]`));
+                    centerHorizontally(monthTabs, monthTabs?.querySelector(`[data-analysis-month="${selectedMonthKey}"]`));
                 });
             }
             document.getElementById('analysis-detail-caption').textContent = `${detailYear}/${String(detailMonth + 1).padStart(2, '0')} 花費明細`;
@@ -2385,6 +2404,35 @@
             renderList();
         }
 
+        function getListComparison() {
+            const value = localStorage.getItem('subscription_list_comparison') || '';
+            return ['', 'day', 'week', 'month', 'quarter', 'halfyear', 'year'].includes(value) ? value : '';
+        }
+
+        function saveListComparison(value) {
+            if (!['', 'day', 'week', 'month', 'quarter', 'halfyear', 'year'].includes(value)) return;
+            localStorage.setItem('subscription_list_comparison', value);
+            renderList();
+        }
+
+        function getComparisonAmount(sub, comparison) {
+            const amount = Number(sub.amount || 0);
+            if (!comparison || sub.paymentType === 'onetime') return amount;
+            const annualMultiplier = ({ '週': 52, '月': 12, '雙月': 6, '季': 4, '半年': 2, '年': 1 })[sub.cycle] || 12;
+            const periodDivisor = { day: 365, week: 52, month: 12, quarter: 4, halfyear: 2, year: 1 }[comparison] || 1;
+            return amount * annualMultiplier / periodDivisor;
+        }
+
+        function getComparisonLabel(comparison) {
+            return ({ day: '平均每天', week: '平均每週', month: '平均每月', quarter: '平均每季', halfyear: '平均每半年', year: '平均每年' })[comparison] || '';
+        }
+
+        function formatComparisonAmount(amount, currency, comparison) {
+            if (!comparison) return formatCardAmountInteger(amount, currency);
+            const prefix = CURRENCY_SYMBOLS[currency] || `${currency || 'TWD'} `;
+            return `${prefix}${Number(amount || 0).toLocaleString('zh-TW', { maximumFractionDigits: 2 })}`;
+        }
+
         function renderList() {
             const container = document.getElementById('subscriptions-grouped-list');
             const searchKeyword = document.getElementById('search-input').value.toLowerCase();
@@ -2393,6 +2441,7 @@
             const cycleFilter = document.getElementById('filter-cycle').value;
             const sortBy = document.getElementById('list-sort').value;
             const groupBy = document.getElementById('list-group').value;
+            const comparison = getListComparison();
             openSubscriptionSwipe = null;
             container.innerHTML = '';
 
@@ -2440,7 +2489,19 @@
                     grouped[groupName].push(sub);
                 });
             } else if (activeSubscriptions.length) {
-                grouped.all = activeSubscriptions;
+                if (sortBy === 'remaining-asc') {
+                    const currentYear = new Date().getFullYear();
+                    const currentItems = [];
+                    const laterItems = [];
+                    activeSubscriptions.forEach(sub => {
+                        const nextPayment = getNextPaymentDate(sub);
+                        (nextPayment && nextPayment.getFullYear() > currentYear ? laterItems : currentItems).push(sub);
+                    });
+                    if (currentItems.length) grouped.all = currentItems;
+                    if (laterItems.length) grouped.__later_year__ = laterItems;
+                } else {
+                    grouped.all = activeSubscriptions;
+                }
             }
             if (inactiveSubscriptions.length) grouped.__inactive__ = inactiveSubscriptions;
 
@@ -2452,7 +2513,7 @@
             for (const [pm, items] of Object.entries(grouped)) {
                 const groupElem = document.createElement('div');
                 groupElem.className = "space-y-3";
-                const convertedGroupAmounts = items.map(sub => convertCurrency(sub.amount, sub.currency || 'TWD', displayCurrency));
+                const convertedGroupAmounts = items.map(sub => convertCurrency(getComparisonAmount(sub, comparison), sub.currency || 'TWD', displayCurrency));
                 const hasUnconvertedAmount = convertedGroupAmounts.some(amount => amount === null);
                 const groupTotal = convertedGroupAmounts.reduce((total, amount) => total + (amount || 0), 0);
                 const isInactiveGroup = pm === '__inactive__';
@@ -2461,6 +2522,8 @@
                     ? '無即將到來的付款'
                     : isUpcomingGroup
                         ? `${upcomingGroupDays} 天內即將付款`
+                        : pm === '__later_year__'
+                            ? '稍後'
                         : pm === '__later__'
                             ? '其他即將付款'
                             : (showGroups ? pm : '全部');
@@ -2474,7 +2537,7 @@
                             ${groupTitle}
                             <span class="shrink-0 text-xs text-gray-500 bg-darkCard px-2 py-0.5 rounded-full">${items.length}</span>
                         </div>
-                        <span class="shrink-0 text-sm font-bold text-gray-300">${isInactiveGroup ? formatCardAmountInteger(0, displayCurrency) : (hasUnconvertedAmount ? '—' : formatCardAmountInteger(groupTotal, displayCurrency))}</span>
+                        <span class="shrink-0 text-sm font-bold text-gray-300">${isInactiveGroup ? formatComparisonAmount(0, displayCurrency, comparison) : (hasUnconvertedAmount ? '—' : formatComparisonAmount(groupTotal, displayCurrency, comparison))}</span>
                     </div>
                     <div class="space-y-3 group-items"></div>`;
 
@@ -2502,7 +2565,8 @@
                     const txtClass = getTextColorClass(cardBgColor);
                     const secTxtClass = getSecondaryTextColorClass(cardBgColor);
                     const sourceCurrency = sub.currency || 'TWD';
-                    const displayedAmount = convertCurrency(sub.amount, sourceCurrency, displayCurrency);
+                    const comparedSourceAmount = getComparisonAmount(sub, comparison);
+                    const displayedAmount = convertCurrency(comparedSourceAmount, sourceCurrency, displayCurrency);
                     const canShowDisplayAmount = displayedAmount !== null;
                     const showOriginalAmount = cardLayout.showConvertedAmount && sourceCurrency !== displayCurrency && canShowDisplayAmount;
 
@@ -2532,9 +2596,9 @@
                             </div>
                         </div>
                         <div class="shrink-0 py-0.5 text-right whitespace-nowrap">
-                            <div class="text-lg font-extrabold leading-relaxed ${txtClass}">${canShowDisplayAmount ? formatCardAmountInteger(displayedAmount, displayCurrency) : formatCardAmountInteger(sub.amount, sourceCurrency)}</div>
-                            ${showOriginalAmount ? `<div class="text-[11px] ${secTxtClass}">${formatAmount(sub.amount, sourceCurrency)}</div>` : ''}
-                            <div class="text-[11px] ${secTxtClass}">${sub.paymentType === 'onetime' ? '一次性付款' : '每' + escapeHTML(sub.cycle)}</div>
+                            <div class="text-lg font-extrabold leading-relaxed ${txtClass}">${canShowDisplayAmount ? formatComparisonAmount(displayedAmount, displayCurrency, comparison) : formatComparisonAmount(comparedSourceAmount, sourceCurrency, comparison)}</div>
+                            ${showOriginalAmount ? `<div class="text-[11px] ${secTxtClass}">${formatComparisonAmount(comparedSourceAmount, sourceCurrency, comparison)}</div>` : ''}
+                            <div class="text-[11px] ${secTxtClass}">${sub.paymentType === 'onetime' ? '一次性付款' : (comparison ? getComparisonLabel(comparison) : '每' + escapeHTML(sub.cycle))}</div>
                         </div>
                     `;
                     swipeRow.append(swipeActions, itemCard);
