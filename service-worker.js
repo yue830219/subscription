@@ -1,4 +1,4 @@
-const CACHE_NAME = 'subscription-manager-v3';
+const CACHE_NAME = 'subscription-manager-v4';
 const APP_ASSETS = [
   './index.html',
   './manifest-subscription.json',
@@ -42,7 +42,6 @@ self.addEventListener('notificationclick', event => {
   event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async clients => {
     for (const client of clients) {
       if (new URL(client.url).origin !== self.location.origin) continue;
-      if ('navigate' in client) await client.navigate(targetUrl);
       return client.focus();
     }
     return self.clients.openWindow(targetUrl);
