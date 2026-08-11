@@ -1927,8 +1927,8 @@
             };
             detailMeta('detail-payment-method', 'payment', sub.paymentMethod, '未設定');
             detailMeta('detail-category', 'category', sub.category, '未分類');
-            document.getElementById('detail-notes').textContent = sub.notes || '沒有備註';
-            document.getElementById('detail-notes-card').classList.toggle('hidden', !sub.notes);
+            document.getElementById('detail-notes').textContent = sub.notes || '';
+            document.getElementById('detail-notes-card').classList.remove('hidden');
 
             const detailIcon = document.getElementById('detail-icon');
             const logoSrc = safeImageSrc(sub.logo);
