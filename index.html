@@ -188,6 +188,7 @@
                 <option value="category">依類別群組</option>
                 <option value="payment">依付款方式群組</option>
                 <option value="cycle">依計費週期群組</option>
+                <option value="upcoming">即將到來</option>
             </select>
             <select id="filter-category" onchange="renderList()" aria-label="篩選類別" class="shrink-0 bg-darkCard rounded-xl px-3 py-2 text-xs text-gray-300 border border-darkBorder/50 focus:outline-none focus:ring-1 focus:ring-accentBlue"></select>
             <select id="filter-payment" onchange="renderList()" aria-label="篩選付款方式" class="shrink-0 bg-darkCard rounded-xl px-3 py-2 text-xs text-gray-300 border border-darkBorder/50 focus:outline-none focus:ring-1 focus:ring-accentBlue"></select>
@@ -892,6 +893,7 @@
         let exchangeRatesToTwd = { TWD: 1 };
         let exchangeRateStatus = '正在取得最新外幣匯率…';
         let selectedSubscriptionId = null;
+        let upcomingGroupDays = 7;
 
         // Date Picker State
         const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -2125,6 +2127,12 @@
             ].join('<div class="mx-3 border-t border-darkBorder/70"></div>') + `<div class="mx-3 border-t border-darkBorder/70"></div><div class="px-3 py-3"><p class="mb-2 text-xs text-gray-400">標題下方資訊</p><div class="overflow-hidden rounded-xl bg-darkBg">${secondaryOptions.map(([value, label]) => `<button type="button" onclick="updateCardLayout('secondaryInfo', '${value}')" class="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm hover:bg-white/5">${label}${cardLayout.secondaryInfo === value ? '<i class="fa-solid fa-check text-accentBlue"></i>' : ''}</button>`).join('')}</div></div>`;
         }
 
+        function cycleUpcomingGroupDays() {
+            const options = [7, 3, 1];
+            upcomingGroupDays = options[(options.indexOf(upcomingGroupDays) + 1) % options.length];
+            renderList();
+        }
+
         function renderList() {
             const container = document.getElementById('subscriptions-grouped-list');
             const searchKeyword = document.getElementById('search-input').value.toLowerCase();
@@ -2159,7 +2167,21 @@
                 if (groupBy === 'cycle') return sub.paymentType === 'onetime' ? '一次性付款' : (sub.cycle || '月');
                 return '';
             };
-            if (showGroups) {
+            if (groupBy === 'upcoming') {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (activeSubscriptions.length) {
+                    grouped.__upcoming__ = [];
+                    grouped.__later__ = [];
+                }
+                activeSubscriptions.forEach(sub => {
+                    const nextPayment = getNextPaymentDate(sub);
+                    const daysAway = nextPayment ? Math.round((nextPayment.getTime() - today.getTime()) / 86400000) : Infinity;
+                    const groupKey = daysAway >= 0 && daysAway <= upcomingGroupDays ? '__upcoming__' : '__later__';
+                    if (!grouped[groupKey]) grouped[groupKey] = [];
+                    grouped[groupKey].push(sub);
+                });
+            } else if (showGroups) {
                 activeSubscriptions.forEach(sub => {
                     const groupName = getGroupName(sub);
                     if (!grouped[groupName]) grouped[groupName] = [];
@@ -2182,12 +2204,22 @@
                 const hasUnconvertedAmount = convertedGroupAmounts.some(amount => amount === null);
                 const groupTotal = convertedGroupAmounts.reduce((total, amount) => total + (amount || 0), 0);
                 const isInactiveGroup = pm === '__inactive__';
-                const groupName = isInactiveGroup ? '無即將到來的付款' : (showGroups ? pm : '全部');
+                const isUpcomingGroup = pm === '__upcoming__';
+                const groupName = isInactiveGroup
+                    ? '無即將到來的付款'
+                    : isUpcomingGroup
+                        ? `${upcomingGroupDays} 天內即將付款`
+                        : pm === '__later__'
+                            ? '其他即將付款'
+                            : (showGroups ? pm : '全部');
+                const groupTitle = isUpcomingGroup
+                    ? `<button type="button" onclick="cycleUpcomingGroupDays()" class="flex min-w-0 items-center gap-1 truncate font-bold text-sm text-accentBlue" aria-label="切換即將付款天數，目前為 ${upcomingGroupDays} 天"><span class="truncate">${escapeHTML(groupName)}</span><i class="fa-solid fa-repeat shrink-0 text-[10px]"></i></button>`
+                    : `<span class="truncate font-bold text-sm text-gray-200">${escapeHTML(groupName)}</span>`;
 
                 groupElem.innerHTML = `
                     <div class="flex justify-between items-center gap-3 px-1">
                         <div class="min-w-0 flex items-center space-x-2">
-                            <span class="truncate font-bold text-sm text-gray-200">${escapeHTML(groupName)}</span>
+                            ${groupTitle}
                             <span class="shrink-0 text-xs text-gray-500 bg-darkCard px-2 py-0.5 rounded-full">${items.length}</span>
                         </div>
                         <span class="shrink-0 text-sm font-bold text-gray-300">${isInactiveGroup ? formatCardAmountInteger(0, displayCurrency) : (hasUnconvertedAmount ? '—' : formatCardAmountInteger(groupTotal, displayCurrency))}</span>
@@ -2702,37 +2734,42 @@
 
             const getBackAction = () => {
                 const getVisible = id => document.getElementById(id);
+                const createBackAction = (element, action, elements = [element]) => ({ element, elements, action });
                 const cardLayout = getVisible('modal-card-layout');
                 const subModal = getVisible('modal-sub');
                 const detail = getVisible('view-subscription-detail');
                 const iconPicker = getVisible('modal-manager-icon-picker');
                 const manager = getVisible('modal-manager');
                 const settings = getVisible('modal-settings');
-                if (!cardLayout.classList.contains('hidden')) return { element: cardLayout, action: closeCardLayoutModal };
-                if (!subModal.classList.contains('hidden')) return { element: subModal, action: () => closeModal('modal-sub') };
-                if (!detail.classList.contains('hidden')) return { element: detail, action: closeSubscriptionDetail };
-                if (!iconPicker.classList.contains('hidden')) return { element: iconPicker, action: closeManagerIconPicker };
-                if (!manager.classList.contains('hidden')) return { element: manager, action: () => closeModal('modal-manager') };
-                if (!settings.classList.contains('hidden')) return { element: settings, action: () => closeModal('modal-settings') };
+                if (!cardLayout.classList.contains('hidden')) return createBackAction(cardLayout, closeCardLayoutModal);
+                if (!subModal.classList.contains('hidden')) return createBackAction(subModal, () => closeModal('modal-sub'));
+                // iOS 會讓 transformed 祖先中的 fixed 底欄失去視窗定位，因此詳情頁改為分別移動子元素。
+                if (!detail.classList.contains('hidden')) return createBackAction(detail, closeSubscriptionDetail, Array.from(detail.children));
+                if (!iconPicker.classList.contains('hidden')) return createBackAction(iconPicker, closeManagerIconPicker);
+                if (!manager.classList.contains('hidden')) return createBackAction(manager, () => closeModal('modal-manager'));
+                if (!settings.classList.contains('hidden')) return createBackAction(settings, () => closeModal('modal-settings'));
                 return null;
             };
 
-            const resetSurface = element => {
-                element.style.transition = '';
-                element.style.transform = '';
-                element.style.opacity = '';
-                element.style.willChange = '';
+            const updateSurfaces = (elements, styles) => {
+                elements.forEach(element => Object.assign(element.style, styles));
+            };
+
+            const resetSurfaces = elements => {
+                updateSurfaces(elements, { transition: '', transform: '', opacity: '', willChange: '' });
             };
 
             const cancelEdgeSwipe = () => {
                 if (!startPoint) return;
-                const { element } = startPoint;
+                const { elements } = startPoint;
                 startPoint = null;
-                element.style.transition = 'transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease';
-                element.style.transform = 'translate3d(0, 0, 0)';
-                element.style.opacity = '1';
+                updateSurfaces(elements, {
+                    transition: 'transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease',
+                    transform: 'translate3d(0, 0, 0)',
+                    opacity: '1'
+                });
                 window.clearTimeout(resetTimer);
-                resetTimer = window.setTimeout(() => resetSurface(element), 190);
+                resetTimer = window.setTimeout(() => resetSurfaces(elements), 190);
             };
 
             document.addEventListener('touchstart', event => {
@@ -2740,8 +2777,8 @@
                 if (!back || event.touches.length !== 1 || event.touches[0].clientX > 24) return;
                 const touch = event.touches[0];
                 window.clearTimeout(resetTimer);
-                resetSurface(back.element);
-                back.element.style.willChange = 'transform, opacity';
+                resetSurfaces(back.elements);
+                updateSurfaces(back.elements, { willChange: 'transform, opacity' });
                 startPoint = { x: touch.clientX, y: touch.clientY, ...back };
             }, { passive: true, capture: true });
 
@@ -2752,9 +2789,11 @@
                 const deltaY = touch.clientY - startPoint.y;
                 if (deltaX <= 0 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
                 const progress = Math.min(deltaX / window.innerWidth, 0.45);
-                startPoint.element.style.transition = 'none';
-                startPoint.element.style.transform = `translate3d(${Math.min(deltaX, window.innerWidth * 0.45)}px, 0, 0)`;
-                startPoint.element.style.opacity = `${1 - progress * 0.35}`;
+                updateSurfaces(startPoint.elements, {
+                    transition: 'none',
+                    transform: `translate3d(${Math.min(deltaX, window.innerWidth * 0.45)}px, 0, 0)`,
+                    opacity: `${1 - progress * 0.35}`
+                });
             }, { passive: true, capture: true });
 
             document.addEventListener('touchend', event => {
@@ -2762,20 +2801,24 @@
                 const touch = event.changedTouches[0];
                 const deltaX = touch.clientX - startPoint.x;
                 const deltaY = touch.clientY - startPoint.y;
-                const { action, element } = startPoint;
+                const { action, elements } = startPoint;
                 startPoint = null;
                 if (deltaX < 70 || Math.abs(deltaX) <= Math.abs(deltaY)) {
-                    element.style.transition = 'transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease';
-                    element.style.transform = 'translate3d(0, 0, 0)';
-                    element.style.opacity = '1';
-                    resetTimer = window.setTimeout(() => resetSurface(element), 190);
+                    updateSurfaces(elements, {
+                        transition: 'transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease',
+                        transform: 'translate3d(0, 0, 0)',
+                        opacity: '1'
+                    });
+                    resetTimer = window.setTimeout(() => resetSurfaces(elements), 190);
                     return;
                 }
-                element.style.transition = 'transform 210ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease';
-                element.style.transform = `translate3d(${window.innerWidth}px, 0, 0)`;
-                element.style.opacity = '0';
+                updateSurfaces(elements, {
+                    transition: 'transform 210ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease',
+                    transform: `translate3d(${window.innerWidth}px, 0, 0)`,
+                    opacity: '0'
+                });
                 resetTimer = window.setTimeout(() => {
-                    resetSurface(element);
+                    resetSurfaces(elements);
                     action();
                 }, 210);
             }, { passive: true, capture: true });
