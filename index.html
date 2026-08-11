@@ -758,8 +758,28 @@
 
     <!-- 邏輯腳本 JavaScript -->
     <script>
-        const DEFAULT_PAYMENT_METHODS = ['郵局', '永豐銀行', '兆豐銀行', 'Visa', 'Mastercard', 'Apple Pay', '現金'];
-        const DEFAULT_CATEGORIES = ['房屋', '娛樂', '交通', '保險', '投資', '電信', 'AI服務', '雲端儲存'];
+        const DEFAULT_PAYMENT_METHODS = ['Visa', 'Mastercard', 'PayPal', 'Apple Pay', 'Google Pay', '現金'];
+        const DEFAULT_CATEGORIES = ['娛樂', '交通', '保險', '投資', '通訊', '雲端', '教育', 'AI服務', '美食', '金融', '生產力', '社群媒體', '運動', '購物', '工具', '健康', '遊戲', '旅遊'];
+        const DEFAULT_CATEGORY_ICONS = {
+            '娛樂': 'fa-film',
+            '交通': 'fa-car',
+            '保險': 'fa-shield-halved',
+            '投資': 'fa-chart-line',
+            '通訊': 'fa-phone',
+            '雲端': 'fa-cloud',
+            '教育': 'fa-graduation-cap',
+            'AI服務': 'fa-laptop',
+            '美食': 'fa-utensils',
+            '金融': 'fa-landmark',
+            '生產力': 'fa-briefcase',
+            '社群媒體': 'fa-users',
+            '運動': 'fa-dumbbell',
+            '購物': 'fa-cart-shopping',
+            '工具': 'fa-wrench',
+            '健康': 'fa-heart-pulse',
+            '遊戲': 'fa-gamepad',
+            '旅遊': 'fa-plane'
+        };
         const ICON_OPTIONS = [
             'fa-house', 'fa-building', 'fa-city', 'fa-store', 'fa-cart-shopping', 'fa-bag-shopping', 'fa-credit-card', 'fa-wallet', 'fa-money-bill', 'fa-landmark',
             'fa-piggy-bank', 'fa-receipt', 'fa-file-invoice-dollar', 'fa-chart-line', 'fa-chart-pie', 'fa-bitcoin', 'fa-car', 'fa-motorcycle', 'fa-bus', 'fa-train',
@@ -771,10 +791,7 @@
             'fa-cc-visa', 'fa-cc-mastercard', 'fa-cc-amex', 'fa-paypal', 'fa-apple', 'fa-google'
         ];
 
-        const DEFAULT_SUBSCRIPTIONS = [
-            { id: '1', name: '醫療險&意外險', amount: 1800, currency: 'TWD', paymentType: 'recurring', cycle: '月', nextDate: '2026-08-20', paymentMethod: '郵局', category: '保險', bgColor: '#252529', logo: '' },
-            { id: '4', name: '美股-特斯拉', amount: 200.00, currency: 'USD', paymentType: 'recurring', cycle: '月', nextDate: '2026-08-01', paymentMethod: '永豐銀行', category: '投資', bgColor: '#252529', logo: '', notes: '永豐帳戶扣款' }
-        ];
+        const DEFAULT_SUBSCRIPTIONS = [];
 
         function loadStoredArray(key, fallback) {
             try {
@@ -1454,7 +1471,7 @@
             const lowerName = String(name || '').toLowerCase();
             const defaultIcon = type === 'payment'
                 ? (lowerName.includes('visa') ? 'fa-cc-visa' : lowerName.includes('master') ? 'fa-cc-mastercard' : lowerName.includes('amex') || lowerName.includes('american') ? 'fa-cc-amex' : lowerName.includes('paypal') ? 'fa-paypal' : lowerName.includes('apple') ? 'fa-apple' : lowerName.includes('google') ? 'fa-google' : 'fa-credit-card')
-                : 'fa-tags';
+                : (DEFAULT_CATEGORY_ICONS[name] || 'fa-tags');
             return {
                 icon: safeIconClass(saved?.icon || defaultIcon),
                 bgColor: /^#[0-9a-f]{6}$/i.test(saved?.bgColor || '') ? saved.bgColor : (type === 'payment' ? '#56b95c' : '#ffca3a')
