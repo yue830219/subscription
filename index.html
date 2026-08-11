@@ -394,9 +394,6 @@
                     <span id="color-picker-preview" class="block w-full h-full rounded-full bg-[#252529] border border-white/20"></span>
                 </span>
                 <input type="color" id="color-picker-btn" value="#252529" oninput="onColorPicked(this.value)" aria-label="選擇背景顏色" title="選擇背景顏色" class="color-picker-input absolute left-1/2 top-1/2 ml-24 -translate-y-1/2 w-[42px] h-[42px] cursor-pointer opacity-0">
-                <button type="button" onclick="pickColorFromScreen()" aria-label="從其他程式畫面取色" title="從其他程式畫面取色" class="absolute left-1/2 top-1/2 ml-36 -translate-y-1/2 w-[38px] h-[38px] rounded-full border border-darkBorder bg-darkCardSecondary text-white shadow-lg hover:bg-[#303035] transition">
-                    <i class="fa-solid fa-eye-dropper text-sm"></i>
-                </button>
             </div>
             <input type="file" id="sub-logo-file" accept="image/png,image/jpeg,image/gif,image/webp" onchange="previewLogo(event)" class="hidden">
 
@@ -2960,21 +2957,6 @@
             document.getElementById('color-picker-preview').style.backgroundColor = hex;
             document.getElementById('modal-sub').dataset.bgColor = hex;
             updateBuiltInIconBackground(hex);
-        }
-
-        async function pickColorFromScreen() {
-            if ('EyeDropper' in window) {
-                try {
-                    const result = await new EyeDropper().open();
-                    if (result?.sRGBHex) onColorPicked(result.sRGBHex);
-                } catch (error) {
-                    if (error?.name !== 'AbortError') console.warn('螢幕取色失敗。', error);
-                }
-                return;
-            }
-            const colorInput = document.getElementById('color-picker-btn');
-            if (typeof colorInput.showPicker === 'function') colorInput.showPicker();
-            else colorInput.click();
         }
 
         function onHexInput(hex) {
