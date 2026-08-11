@@ -394,6 +394,9 @@
                     <span id="color-picker-preview" class="block w-full h-full rounded-full bg-[#252529] border border-white/20"></span>
                 </span>
                 <input type="color" id="color-picker-btn" value="#252529" oninput="onColorPicked(this.value)" aria-label="選擇背景顏色" title="選擇背景顏色" class="color-picker-input absolute left-1/2 top-1/2 ml-24 -translate-y-1/2 w-[42px] h-[42px] cursor-pointer opacity-0">
+                <button type="button" onclick="pickColorFromScreen()" aria-label="從其他程式畫面取色" title="從其他程式畫面取色" class="absolute left-1/2 top-1/2 ml-36 -translate-y-1/2 w-[38px] h-[38px] rounded-full border border-darkBorder bg-darkCardSecondary text-white shadow-lg hover:bg-[#303035] transition">
+                    <i class="fa-solid fa-eye-dropper text-sm"></i>
+                </button>
             </div>
             <input type="file" id="sub-logo-file" accept="image/png,image/jpeg,image/gif,image/webp" onchange="previewLogo(event)" class="hidden">
 
@@ -931,6 +934,7 @@
         let openCustomSelect = null;
         let suppressCustomSelectOutsideClick = false;
         let customSelectDismissedAt = 0;
+        let customSelectScrolledAt = 0;
         let suppressKeyboardDismissClick = false;
         let keyboardDismissedAt = 0;
         let openSubscriptionSwipe = null;
@@ -968,13 +972,12 @@
                         menu.classList.remove('hidden');
                         openCustomSelect = select;
                         setCustomSelectScrollLock(true);
+                        requestAnimationFrame(() => centerCustomSelectSelection(select));
                     }
                 };
                 new MutationObserver(() => refreshCustomSelect(select)).observe(select, { childList: true, subtree: true });
                 refreshCustomSelect(select);
             });
-            document.addEventListener('pointerdown', dismissCustomSelectOnOutsidePress, true);
-            document.addEventListener('touchstart', dismissCustomSelectOnOutsidePress, true);
             document.addEventListener('click', event => {
                 if (suppressCustomSelectOutsideClick) {
                     suppressCustomSelectOutsideClick = false;
@@ -984,14 +987,9 @@
                         return;
                     }
                 }
+                if (openCustomSelect && Date.now() - customSelectScrolledAt < 180) return;
                 dismissCustomSelectOnOutsidePress(event);
             }, true);
-            document.addEventListener('touchmove', event => {
-                if (openCustomSelect && !event.target.closest?.('.custom-select-menu')) event.preventDefault();
-            }, { passive: false });
-            document.addEventListener('wheel', event => {
-                if (openCustomSelect && !event.target.closest?.('.custom-select-menu')) event.preventDefault();
-            }, { passive: false });
             window.addEventListener('scroll', positionOpenCustomSelect, true);
             window.addEventListener('resize', positionOpenCustomSelect);
         }
@@ -1006,7 +1004,21 @@
         }
 
         function positionOpenCustomSelect() {
-            if (openCustomSelect) positionCustomSelectMenu(openCustomSelect);
+            if (!openCustomSelect || positionOpenCustomSelect._frame) return;
+            customSelectScrolledAt = Date.now();
+            positionOpenCustomSelect._frame = requestAnimationFrame(() => {
+                positionOpenCustomSelect._frame = null;
+                if (openCustomSelect) positionCustomSelectMenu(openCustomSelect);
+            });
+        }
+
+        function centerCustomSelectSelection(select) {
+            const custom = select?._customSelect;
+            if (!custom || custom.menu.classList.contains('hidden')) return;
+            const selectedButton = Array.from(custom.menu.querySelectorAll('button[data-value]'))
+                .find(button => button.dataset.value === select.value && !button.classList.contains('hidden'));
+            if (!selectedButton) return;
+            custom.menu.scrollTop = selectedButton.offsetTop - (custom.menu.clientHeight - selectedButton.offsetHeight) / 2;
         }
 
         function closeCustomSelects() {
@@ -1035,6 +1047,14 @@
             const activeElement = document.activeElement;
             if (!isKeyboardInput(activeElement) || event.target.closest?.('input, textarea, [contenteditable="true"]')) return;
             activeElement.blur();
+
+            // 點擊真正的互動元件時只收起鍵盤，不攔截該次操作。
+            // 這可避免瀏覽器自動填入帳密後，第一次按「匯出／匯入」只剩取消焦點。
+            if (event.target.closest?.('button, a, label, select, [role="button"], [onclick]')) {
+                suppressKeyboardDismissClick = false;
+                return;
+            }
+
             suppressKeyboardDismissClick = true;
             keyboardDismissedAt = Date.now();
             event.preventDefault();
@@ -1076,7 +1096,8 @@
         }
 
         function setCustomSelectScrollLock(isLocked) {
-            document.body.classList.toggle('custom-select-open', isLocked);
+            // 下拉選單開啟時仍允許主畫面捲動；選單會在 scroll 事件中跟隨欄位。
+            document.body.classList.remove('custom-select-open');
         }
 
         function refreshCustomSelects() {
@@ -1939,6 +1960,9 @@
 
             document.getElementById('view-subscription-detail').classList.remove('hidden');
             document.getElementById('view-subscription-detail').classList.add('flex');
+            const detailView = document.getElementById('view-subscription-detail');
+            detailView.scrollTop = 0;
+            requestAnimationFrame(() => { detailView.scrollTop = 0; });
         }
 
         function closeSubscriptionDetail() {
@@ -2025,11 +2049,11 @@
         }
 
         function getTextColorClass(bgColor) {
-            return getContrastYIQ(bgColor) === 'light' ? 'text-gray-900' : 'text-white';
+            return getContrastYIQ(bgColor) === 'light' ? 'text-black' : 'text-white';
         }
 
         function getSecondaryTextColorClass(bgColor) {
-            return getContrastYIQ(bgColor) === 'light' ? 'text-gray-700' : 'text-gray-300';
+            return getTextColorClass(bgColor);
         }
 
         function getCardSecondaryInfo(sub, nextPayment) {
@@ -2082,12 +2106,12 @@
             const secondaryClass = getSecondaryTextColorClass(cardBg);
             const secondaryInfo = getCardSecondaryInfo(previewSub, nextPayment);
             const previewTags = [
-                secondaryInfo ? `<span class="text-xs opacity-85 ${secondaryClass}">${escapeHTML(secondaryInfo)}</span>` : '',
+                secondaryInfo ? `<span class="text-xs ${secondaryClass}">${escapeHTML(secondaryInfo)}</span>` : '',
                 cardLayout.showCycle ? `<span class="rounded-md bg-white/10 px-2 py-0.5 text-[10px] ${secondaryClass}">每月</span>` : '',
                 cardLayout.showCategory ? `<span class="rounded-md bg-white/10 px-2 py-0.5 text-[10px] ${secondaryClass}">影音娛樂</span>` : '',
                 cardLayout.showPaymentMethod ? `<span class="rounded-md bg-white/10 px-2 py-0.5 text-[10px] ${secondaryClass}">Visa</span>` : ''
             ].filter(Boolean).join('');
-            document.getElementById('card-layout-preview').innerHTML = `<div class="flex min-h-[4.5rem] items-center justify-between gap-3 overflow-hidden rounded-2xl p-3.5 shadow-sm" style="background:${cardBg}"><div class="flex min-w-0 flex-1 items-center gap-3"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-xl font-black text-white">N</div><div class="min-w-0 flex-1"><div class="truncate text-base font-bold ${textClass}">Netflix</div>${previewTags ? `<div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">${previewTags}</div>` : ''}</div></div><div class="shrink-0 text-right"><div class="text-lg font-extrabold ${textClass}">${previewTwdAmount}</div>${cardLayout.showConvertedAmount ? `<div class="text-[11px] opacity-85 ${secondaryClass}">USD $20</div>` : ''}<div class="text-[11px] opacity-85 ${secondaryClass}">每月</div></div></div>`;
+            document.getElementById('card-layout-preview').innerHTML = `<div class="flex min-h-[4.5rem] items-center justify-between gap-3 overflow-hidden rounded-2xl p-3.5 shadow-sm" style="background:${cardBg}"><div class="flex min-w-0 flex-1 items-center gap-3"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-xl font-black text-white">N</div><div class="min-w-0 flex-1"><div class="truncate text-base font-bold ${textClass}">Netflix</div>${previewTags ? `<div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">${previewTags}</div>` : ''}</div></div><div class="shrink-0 text-right"><div class="text-lg font-extrabold ${textClass}">${previewTwdAmount}</div>${cardLayout.showConvertedAmount ? `<div class="text-[11px] ${secondaryClass}">USD $20</div>` : ''}<div class="text-[11px] ${secondaryClass}">每月</div></div></div>`;
 
             const secondaryOptions = [
                 ['nextDate', '下次付款日期'], ['daysUntil', '距下次付款天數'], ['notes', '說明'], ['none', '無']
@@ -2208,7 +2232,7 @@
                         : `<span class="text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-black/10 ${secTxtClass}">每${escapeHTML(sub.cycle)}</span>`;
                     const secondaryInfo = getCardSecondaryInfo(sub, nextPayment);
                     const metadata = [
-                        secondaryInfo ? `<span class="max-w-full break-words text-xs opacity-85 ${secTxtClass}">${escapeHTML(secondaryInfo)}</span>` : '',
+                        secondaryInfo ? `<span class="max-w-full break-words text-xs ${secTxtClass}">${escapeHTML(secondaryInfo)}</span>` : '',
                         cardLayout.showCycle ? cycleBadge : '',
                         cardLayout.showCategory ? `<span class="max-w-full break-words text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-black/10 ${secTxtClass}"><i class="fa-solid fa-layer-group mr-1"></i>${escapeHTML(sub.category || '未分類')}</span>` : '',
                         cardLayout.showPaymentMethod ? `<span class="max-w-full break-words text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-black/10 ${secTxtClass}"><i class="fa-regular fa-credit-card mr-1"></i>${escapeHTML(sub.paymentMethod || '未設定')}</span>` : ''
@@ -2225,8 +2249,8 @@
                         </div>
                         <div class="shrink-0 py-0.5 text-right whitespace-nowrap">
                             <div class="text-lg font-extrabold leading-relaxed ${txtClass}">${canShowDisplayAmount ? formatCardAmountInteger(displayedAmount, displayCurrency) : formatCardAmountInteger(sub.amount, sourceCurrency)}</div>
-                            ${showOriginalAmount ? `<div class="text-[11px] opacity-85 ${secTxtClass}">${formatAmount(sub.amount, sourceCurrency)}</div>` : ''}
-                            <div class="text-[11px] opacity-85 ${secTxtClass}">${sub.paymentType === 'onetime' ? '一次性付款' : '每' + escapeHTML(sub.cycle)}</div>
+                            ${showOriginalAmount ? `<div class="text-[11px] ${secTxtClass}">${formatAmount(sub.amount, sourceCurrency)}</div>` : ''}
+                            <div class="text-[11px] ${secTxtClass}">${sub.paymentType === 'onetime' ? '一次性付款' : '每' + escapeHTML(sub.cycle)}</div>
                         </div>
                     `;
                     swipeRow.append(swipeActions, itemCard);
@@ -2938,6 +2962,21 @@
             updateBuiltInIconBackground(hex);
         }
 
+        async function pickColorFromScreen() {
+            if ('EyeDropper' in window) {
+                try {
+                    const result = await new EyeDropper().open();
+                    if (result?.sRGBHex) onColorPicked(result.sRGBHex);
+                } catch (error) {
+                    if (error?.name !== 'AbortError') console.warn('螢幕取色失敗。', error);
+                }
+                return;
+            }
+            const colorInput = document.getElementById('color-picker-btn');
+            if (typeof colorInput.showPicker === 'function') colorInput.showPicker();
+            else colorInput.click();
+        }
+
         function onHexInput(hex) {
             if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
                 document.getElementById('native-color-picker').value = hex;
@@ -2952,9 +2991,12 @@
         // 首次計費日期滾輪 Modal 控制 (第二張截圖設計)
         function openDatePickerModal() {
             const today = new Date();
-            selectedPickerYear = today.getFullYear();
-            selectedPickerMonth = today.getMonth() + 1;
-            selectedPickerDay = today.getDate();
+            const currentValue = document.getElementById('sub-next-date').value;
+            const currentDate = parseLocalDate(currentValue);
+            const initialDate = currentDate || today;
+            selectedPickerYear = initialDate.getFullYear();
+            selectedPickerMonth = initialDate.getMonth() + 1;
+            selectedPickerDay = initialDate.getDate();
             renderDatePickerWheels();
             const modal = document.getElementById('modal-date-picker');
             modal.classList.remove('hidden');
@@ -2968,27 +3010,33 @@
         }
 
         function renderDatePickerWheels() {
+            const wheelCycles = 7;
+            const middleCycle = Math.floor(wheelCycles / 2);
             const monthContainer = document.getElementById('wheel-month');
-            monthContainer.innerHTML = englishMonths.map((_, idx) => {
+            monthContainer.innerHTML = Array.from({ length: wheelCycles }, (_, cycle) => englishMonths.map((_, idx) => {
                 const mNum = idx + 1;
-                const isSelected = mNum === selectedPickerMonth;
-                return `<div data-picker-value="${mNum}" onclick="selectPickerMonth(${mNum})" class="py-1 snap-center text-sm font-medium ${isSelected ? 'text-accentBlue font-bold text-base scale-110' : 'text-gray-400'}">${mNum}</div>`;
-            }).join('');
+                const isSelected = cycle === middleCycle && mNum === selectedPickerMonth;
+                return `<div data-picker-value="${mNum}" data-wheel-cycle="${cycle}" ${isSelected ? 'data-picker-selected="true"' : ''} onclick="selectPickerMonth(${mNum})" class="py-1 snap-center text-sm font-medium ${isSelected ? 'text-accentBlue font-bold text-base scale-110' : 'text-gray-400'}">${mNum}</div>`;
+            }).join('')).join('');
 
             const dayContainer = document.getElementById('wheel-day');
             const daysInMonth = new Date(selectedPickerYear, selectedPickerMonth, 0).getDate();
             if (selectedPickerDay > daysInMonth) selectedPickerDay = daysInMonth;
             let daysHtml = '';
-            for (let d = 1; d <= daysInMonth; d++) {
-                const isSelected = d === selectedPickerDay;
-                daysHtml += `<div data-picker-value="${d}" onclick="selectPickerDay(${d})" class="py-1 snap-center text-sm font-medium ${isSelected ? 'text-accentBlue font-bold text-base scale-110' : 'text-gray-400'}">${d}</div>`;
+            for (let cycle = 0; cycle < wheelCycles; cycle++) {
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const isSelected = cycle === middleCycle && d === selectedPickerDay;
+                    daysHtml += `<div data-picker-value="${d}" data-wheel-cycle="${cycle}" ${isSelected ? 'data-picker-selected="true"' : ''} onclick="selectPickerDay(${d})" class="py-1 snap-center text-sm font-medium ${isSelected ? 'text-accentBlue font-bold text-base scale-110' : 'text-gray-400'}">${d}</div>`;
+                }
             }
             dayContainer.innerHTML = daysHtml;
 
             const yearContainer = document.getElementById('wheel-year');
             let yearsHtml = '';
             const currentYear = new Date().getFullYear();
-            for (let y = currentYear - 5; y <= currentYear + 10; y++) {
+            const firstYear = Math.min(currentYear - 5, selectedPickerYear);
+            const lastYear = Math.max(currentYear + 10, selectedPickerYear);
+            for (let y = firstYear; y <= lastYear; y++) {
                 const isSelected = y === selectedPickerYear;
                 yearsHtml += `<div data-picker-value="${y}" onclick="selectPickerYear(${y})" class="py-1 snap-center text-sm font-medium ${isSelected ? 'text-accentBlue font-bold text-base scale-110' : 'text-gray-400'}">${y}</div>`;
             }
@@ -3000,8 +3048,9 @@
 
             requestAnimationFrame(() => {
                 [yearContainer, monthContainer, dayContainer].forEach(container => {
-                    const selected = container.querySelector('.text-accentBlue');
+                    const selected = container.querySelector('[data-picker-selected="true"], .text-accentBlue');
                     if (selected) {
+                        container._suppressHapticUntil = Date.now() + 250;
                         container.scrollTop = selected.offsetTop - (container.clientHeight - selected.clientHeight) / 2;
                     }
                 });
@@ -3012,21 +3061,36 @@
             if (container.dataset.wheelBound) return;
             container.dataset.wheelBound = 'true';
             container.addEventListener('scroll', () => {
+                requestAnimationFrame(() => provideDateWheelHaptic(container));
                 clearTimeout(container._wheelScrollTimer);
                 container._wheelScrollTimer = setTimeout(() => selectDateWheelCenter(container, type), 80);
             }, { passive: true });
         }
 
-        function selectDateWheelCenter(container, type) {
+        function getDateWheelCenterItem(container) {
             const center = container.getBoundingClientRect().top + container.clientHeight / 2;
-            const nearest = Array.from(container.querySelectorAll('[data-picker-value]')).reduce((closest, item) => {
+            return Array.from(container.querySelectorAll('[data-picker-value]')).reduce((closest, item) => {
                 const itemCenter = item.getBoundingClientRect().top + item.clientHeight / 2;
                 return !closest || Math.abs(itemCenter - center) < Math.abs(closest.getBoundingClientRect().top + closest.clientHeight / 2 - center) ? item : closest;
             }, null);
+        }
+
+        function provideDateWheelHaptic(container) {
+            if (Date.now() < (container._suppressHapticUntil || 0)) return;
+            const nearest = getDateWheelCenterItem(container);
+            const hapticKey = nearest ? `${nearest.dataset.wheelCycle || 'year'}-${nearest.dataset.pickerValue}` : '';
+            if (!hapticKey || hapticKey === container.dataset.lastHapticKey) return;
+            container.dataset.lastHapticKey = hapticKey;
+            if (navigator.vibrate) navigator.vibrate(8);
+        }
+
+        function selectDateWheelCenter(container, type) {
+            const nearest = getDateWheelCenterItem(container);
             const value = Number(nearest?.dataset.pickerValue);
             if (!value) return;
-            if (type === 'month' && value !== selectedPickerMonth) selectPickerMonth(value);
-            if (type === 'day' && value !== selectedPickerDay) selectPickerDay(value);
+            // 月、日停下來後重新置中到中間那一組，形成可持續循環的滾輪。
+            if (type === 'month') selectPickerMonth(value);
+            if (type === 'day') selectPickerDay(value);
             if (type === 'year' && value !== selectedPickerYear) selectPickerYear(value);
         }
 
@@ -3078,6 +3142,8 @@
             const modal = document.getElementById('modal-sub');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            modal.scrollTop = 0;
+            requestAnimationFrame(() => { modal.scrollTop = 0; });
         }
 
         function openEditModal(id) {
@@ -3137,6 +3203,8 @@
             const modal = document.getElementById('modal-sub');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            modal.scrollTop = 0;
+            requestAnimationFrame(() => { modal.scrollTop = 0; });
         }
 
         function saveSubscription(e) {
