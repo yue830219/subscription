@@ -13,3 +13,7 @@ GitHub Pages 部署時請上傳下列檔案與資料夾，並保留原有路徑�
 `https://<你的帳號>.github.io/<儲存庫名稱>/`
 
 開啟訂閱管理器。iPhone Safari 開啟此網址後，選「分享 → 加入主畫面」，即可使用專屬 App 圖示。
+
+## 付款推播通知
+
+獨立通知後端位於 `notification-worker/`。先依該資料夾的 README 部署 Cloudflare Worker 並設定 VAPID Secrets，之後即可在 App「設定 → 付款通知」開啟付款前 7 天提醒。

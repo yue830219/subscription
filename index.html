@@ -79,6 +79,10 @@
         .color-picker-input { appearance: none; -webkit-appearance: none; padding: 0; overflow: hidden; }
         .color-picker-input::-webkit-color-swatch-wrapper { padding: 0; }
         .color-picker-input::-webkit-color-swatch { border: 0; border-radius: 9999px; }
+        #portrait-lock-overlay { display: none; }
+        @media (orientation: landscape) and (max-height: 600px) {
+            #portrait-lock-overlay { display: flex; }
+        }
         .subscription-list-card {
             user-select: none;
             -webkit-user-select: none;
@@ -146,6 +150,10 @@
     </style>
 </head>
 <body class="max-w-md mx-auto min-h-screen bg-darkBg text-white relative pb-20 border-x border-darkBorder/30">
+    <div id="portrait-lock-overlay" class="fixed inset-0 z-[999] flex-col items-center justify-center gap-4 bg-[#0f0f12] p-8 text-center">
+        <i class="fa-solid fa-mobile-screen-button text-5xl text-accentBlue"></i>
+        <p class="text-xl font-bold">請將手機轉回直向</p>
+    </div>
 
     <!-- 頂部導航欄 -->
     <header id="app-header" class="p-4 flex items-center justify-between sticky top-0 bg-darkBg/90 backdrop-blur-md z-10 border-b border-darkBorder/30">
@@ -963,6 +971,7 @@
             setupPageBackgroundSwipe();
             setupEdgeBackSwipe();
             setupOverlayScrollLock();
+            requestPortraitOrientationLock();
             if (location.protocol === 'https:' && 'serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./service-worker.js').catch(error => console.warn('離線快取啟用失敗。', error));
             }
@@ -984,6 +993,15 @@
         let subscriptionSwipeDismissedAt = 0;
         let overlayLockedScrollY = 0;
         let overlayScrollLockActive = false;
+
+        async function requestPortraitOrientationLock() {
+            if (typeof screen.orientation?.lock !== 'function') return;
+            try {
+                await screen.orientation.lock('portrait-primary');
+            } catch (error) {
+                // 部分瀏覽器只允許全螢幕或主畫面 App 鎖定；CSS 遮罩會作為後備。
+            }
+        }
 
         function setupOverlayScrollLock() {
             const surfaces = Array.from(document.querySelectorAll('[id^="modal-"], #view-subscription-detail'));
