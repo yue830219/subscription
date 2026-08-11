@@ -428,6 +428,7 @@
                         <option value="SGD">SGD (S$)</option>
                         <option value="KRW">KRW (₩)</option>
                         <option value="THB">THB (฿)</option>
+                        <option value="INR">INR (₹)</option>
                     </select>
                 </div>
                 <div class="bg-darkCardSecondary rounded-2xl p-3.5 flex-1">
@@ -650,6 +651,7 @@
                         <option value="SGD">SGD (S$)</option>
                         <option value="KRW">KRW (₩)</option>
                         <option value="THB">THB (฿)</option>
+                        <option value="INR">INR (₹)</option>
                     </select>
                 </div>
                 <div class="bg-darkBg p-3.5 rounded-2xl border border-darkBorder/50 flex justify-between items-center">
@@ -667,6 +669,7 @@
                         <option value="SGD">SGD (S$)</option>
                         <option value="KRW">KRW (₩)</option>
                         <option value="THB">THB (฿)</option>
+                        <option value="INR">INR (₹)</option>
                     </select>
                 </div>
             </div>
@@ -816,14 +819,14 @@
             }
         }
 
-        const SUPPORTED_CURRENCIES = ['TWD', 'USD', 'EUR', 'JPY', 'CNY', 'HKD', 'GBP', 'AUD', 'CAD', 'SGD', 'KRW', 'THB'];
+        const SUPPORTED_CURRENCIES = ['TWD', 'USD', 'EUR', 'JPY', 'CNY', 'HKD', 'GBP', 'AUD', 'CAD', 'SGD', 'KRW', 'THB', 'INR'];
         const CURRENCY_SYMBOLS = {
             TWD: '$', USD: '$', EUR: '€', JPY: '¥', CNY: '¥', HKD: '$',
-            GBP: '£', AUD: '$', CAD: '$', SGD: '$', KRW: '₩', THB: '฿'
+            GBP: '£', AUD: '$', CAD: '$', SGD: '$', KRW: '₩', THB: '฿', INR: '₹'
         };
         const CURRENCY_PREFIXES = {
             TWD: 'TWD $', USD: 'USD $', EUR: 'EUR €', JPY: 'JPY ¥', CNY: 'CNY ¥', HKD: 'HKD $',
-            GBP: 'GBP £', AUD: 'AUD $', CAD: 'CAD $', SGD: 'SGD $', KRW: 'KRW ₩', THB: 'THB ฿'
+            GBP: 'GBP £', AUD: 'AUD $', CAD: 'CAD $', SGD: 'SGD $', KRW: 'KRW ₩', THB: 'THB ฿', INR: 'INR ₹'
         };
 
         function loadDefaultCurrency() {
