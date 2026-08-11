@@ -693,6 +693,10 @@
                             <option value="1">1 天前</option>
                         </select>
                     </div>
+                    <div class="flex items-center justify-between gap-3 rounded-xl bg-darkCardSecondary px-3 py-2.5">
+                        <label for="payment-notification-time" class="text-sm text-gray-300">通知時間</label>
+                        <input type="time" id="payment-notification-time" value="09:00" onchange="savePaymentNotificationTime(this.value)" class="rounded-lg bg-darkBg px-3 py-1.5 text-sm font-bold text-white focus:outline-none">
+                    </div>
                     <button type="button" id="payment-notification-test" onclick="sendPaymentNotificationTest()" class="hidden w-full rounded-xl bg-darkCardSecondary py-2.5 text-sm font-bold text-white hover:bg-[#303035]">傳送測試通知</button>
                     <p class="text-xs text-gray-500">iPhone 需加入主畫面並允許通知。</p>
                 </div>
@@ -1221,6 +1225,17 @@
             schedulePaymentNotificationSync();
         }
 
+        function getPaymentNotificationTime() {
+            const value = localStorage.getItem('subscription_notification_time') || '09:00';
+            return /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : '09:00';
+        }
+
+        function savePaymentNotificationTime(value) {
+            if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) return;
+            localStorage.setItem('subscription_notification_time', value);
+            schedulePaymentNotificationSync();
+        }
+
         function getNotificationDeviceId() {
             let id = localStorage.getItem('subscription_notification_device_id');
             if (!/^[a-f0-9-]{36}$/i.test(id || '')) {
@@ -1262,12 +1277,14 @@
         async function refreshPaymentNotificationSettings() {
             const notificationDays = getPaymentNotificationDays();
             const daysSelect = document.getElementById('payment-notification-days');
+            const timeInput = document.getElementById('payment-notification-time');
             const title = document.getElementById('payment-notification-title');
             if (daysSelect) {
                 daysSelect.value = String(notificationDays);
                 refreshCustomSelect(daysSelect);
             }
             if (title) title.textContent = `付款前 ${notificationDays} 天通知`;
+            if (timeInput) timeInput.value = getPaymentNotificationTime();
             if (!paymentNotificationsSupported()) {
                 setPaymentNotificationUi(false, '此瀏覽器或開啟方式不支援推播');
                 return;
@@ -1304,7 +1321,7 @@
                 localStorage.setItem('subscription_notifications_enabled', 'true');
                 await syncPaymentNotifications();
                 setPaymentNotificationUi(true, `已開啟，付款前 ${getPaymentNotificationDays()} 天提醒`);
-                await showAppAlert('付款通知已開啟。你可以按「傳送測試通知」確認。', '通知設定完成');
+                await showAppAlert('通知設定已開啟', '通知設定完成');
             } catch (error) {
                 localStorage.removeItem('subscription_notifications_enabled');
                 setPaymentNotificationUi(false, '開啟失敗');
@@ -1317,6 +1334,7 @@
         function buildPaymentNotificationReminders() {
             const now = Date.now();
             const notificationDays = getPaymentNotificationDays();
+            const [notificationHour, notificationMinute] = getPaymentNotificationTime().split(':').map(Number);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const reminders = [];
@@ -1329,7 +1347,7 @@
                         const id = `${sub.id}-${paymentKey}`;
                         if (seen.has(id)) return;
                         seen.add(id);
-                        const notifyAt = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), paymentDate.getDate() - notificationDays, 9, 0, 0);
+                        const notifyAt = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), paymentDate.getDate() - notificationDays, notificationHour, notificationMinute, 0);
                         const daysAway = Math.round((paymentDate.getTime() - today.getTime()) / 86400000);
                         if (daysAway < 0 || (notifyAt.getTime() <= now && daysAway > notificationDays)) return;
                         reminders.push({
