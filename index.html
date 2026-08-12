@@ -118,21 +118,13 @@
         }
         #theme-preview-status-shield {
             position: fixed;
-            inset: 0 0 auto;
-            z-index: 9999;
-            display: none;
-            height: 0.4rem;
-            pointer-events: none;
-        }
-        #theme-preview-status-shield.is-active { display: block; }
-        #theme-preview-transition-overlay {
-            position: fixed;
             inset: 0;
-            z-index: 9998;
+            z-index: 9999;
             display: none;
             opacity: 0;
             pointer-events: none;
         }
+        #theme-preview-status-shield.is-active { display: block; }
         /* TEMP VERSION BADGE: remove this block and #app-version-badge when requested. */
         #app-version-badge {
             position: fixed;
@@ -347,7 +339,6 @@
 </head>
 <body class="max-w-md mx-auto min-h-screen bg-darkBg text-white relative pb-20 border-x border-darkBorder/30">
     <div id="ios-status-bar-shield" aria-hidden="true"></div>
-    <div id="theme-preview-transition-overlay" aria-hidden="true"></div>
     <div id="theme-preview-status-shield" aria-hidden="true"></div>
     <div id="app-version-badge" aria-label="目前版本"></div>
     <div id="portrait-lock-overlay" class="fixed inset-0 z-[999] flex-col items-center justify-center gap-4 bg-[#0f0f12] p-8 text-center">
@@ -1139,7 +1130,7 @@
         }
 
         // TEMP VERSION BADGE: increment after every user-visible update; remove when requested.
-        const APP_VERSION = 'v1.0.4';
+        const APP_VERSION = 'v1.0.5';
 
         const DEFAULT_CARD_LAYOUT = {
             coloredCard: true,
@@ -3239,26 +3230,24 @@
             pendingThemePreference = value;
             renderThemePreferenceOptions();
             clearThemePreviewStatusShield();
-            const overlay = document.getElementById('theme-preview-transition-overlay');
-            if (!overlay) {
+            const shield = document.getElementById('theme-preview-status-shield');
+            if (!shield || typeof shield.animate !== 'function') {
                 applyThemePreference(value);
-                showThemePreviewStatusShield(value);
                 return;
             }
             const currentUseLight = document.documentElement.classList.contains('theme-light');
-            overlay.style.display = 'block';
-            overlay.style.backgroundColor = currentUseLight ? '#f2f4f8' : '#0f0f12';
+            shield.style.backgroundColor = currentUseLight ? '#f2f4f8' : '#0f0f12';
+            shield.classList.add('is-active');
             try {
-                themePreviewAnimation = overlay.animate(
+                themePreviewAnimation = shield.animate(
                     [{ opacity: 0 }, { opacity: 1 }],
                     { duration: 240, easing: 'ease-in-out', fill: 'forwards' }
                 );
                 await themePreviewAnimation.finished;
                 if (sequence !== themePreviewTransitionSequence) return;
                 applyThemePreference(value);
-                overlay.style.backgroundColor = resolvedTheme(value) === 'light' ? '#f2f4f8' : '#0f0f12';
-                showThemePreviewStatusShield(value);
-                themePreviewAnimation = overlay.animate(
+                shield.style.backgroundColor = resolvedTheme(value) === 'light' ? '#f2f4f8' : '#0f0f12';
+                themePreviewAnimation = shield.animate(
                     [{ opacity: 1 }, { opacity: 0 }],
                     { duration: 300, easing: 'ease-in-out', fill: 'forwards' }
                 );
@@ -3274,11 +3263,7 @@
         function stopThemePreviewTransition() {
             themePreviewAnimation?.cancel();
             themePreviewAnimation = null;
-            const overlay = document.getElementById('theme-preview-transition-overlay');
-            if (!overlay) return;
-            overlay.style.display = 'none';
-            overlay.style.opacity = '';
-            overlay.style.backgroundColor = '';
+            clearThemePreviewStatusShield();
         }
 
         function cancelThemePreviewTransition() {
@@ -3286,19 +3271,11 @@
             stopThemePreviewTransition();
         }
 
-        function showThemePreviewStatusShield(preference) {
-            const shield = document.getElementById('theme-preview-status-shield');
-            if (!shield) return;
-            shield.classList.remove('is-active');
-            void shield.offsetWidth;
-            shield.style.backgroundColor = resolvedTheme(preference) === 'light' ? '#f2f4f8' : '#0f0f12';
-            shield.classList.add('is-active');
-        }
-
         function clearThemePreviewStatusShield() {
             const shield = document.getElementById('theme-preview-status-shield');
             if (!shield) return;
             shield.classList.remove('is-active');
+            shield.style.opacity = '';
             shield.style.backgroundColor = '';
         }
 
