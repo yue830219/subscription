@@ -4160,20 +4160,17 @@
                     }, 310);
                     return;
                 }
-                const remainingOpacity = Math.max(0, Math.min(1, Number.parseFloat(element.style.opacity || '1')));
-                const completionDuration = Math.max(160, Math.round(remainingOpacity * 680));
-                const chromeDuration = Math.max(160, completionDuration - 40);
                 updateSurfaces(elements, {
-                    transition: `transform ${completionDuration}ms cubic-bezier(.2,.8,.2,1), opacity ${completionDuration}ms linear`,
+                    transition: 'transform 340ms cubic-bezier(.2,.8,.2,1), opacity 340ms ease',
                     transform: `translate3d(${window.innerWidth * 0.25}px, 0, 0)`,
                     opacity: '0'
                 });
                 updateSurfaces(topChromeElements, {
-                    transition: `opacity ${chromeDuration}ms linear`,
+                    transition: 'opacity 300ms ease',
                     opacity: '0'
                 });
                 updateSurfaces(backgroundElements, {
-                    transition: `transform ${completionDuration}ms cubic-bezier(.2,.8,.2,1)`,
+                    transition: 'transform 340ms cubic-bezier(.2,.8,.2,1)',
                     transform: 'translate3d(0, 0, 0)'
                 });
                 resetTimer = window.setTimeout(() => {
@@ -4185,7 +4182,7 @@
                     resetSurfaces(backgroundElements);
                     resetSurfaces(topChromeElements);
                     updateMainTopBarVisibility();
-                }, completionDuration + 10);
+                }, 350);
             }, { passive: true, capture: true });
             document.addEventListener('touchcancel', cancelEdgeSwipe, { passive: true, capture: true });
         }
