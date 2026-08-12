@@ -112,6 +112,11 @@
         html.theme-light .bg-emerald-500 .text-white,
         html.theme-light .bg-red-500 .text-white,
         html.theme-light .bg-red-600 .text-white { color: #fff !important; }
+        html.theme-light .subscription-glyph-icon { color: #fff !important; }
+        html.theme-light .subscription-list-card .bg-black\/10,
+        html.theme-light .card-layout-preview-card .bg-white\/10 { background-color: rgba(15, 23, 42, .14) !important; }
+        html.theme-light .subscription-list-card .bg-black\/10,
+        html.theme-light .card-layout-preview-card .bg-white\/10 { background-color: rgba(15, 23, 42, .14) !important; }
         html.theme-light #analysis-annual-card { background-color: #dff7eb !important; border-color: #a7e8c8 !important; }
         html.theme-light #analysis-annual-card > * { color: #166534 !important; }
         html.theme-light #analysis-category-donut { box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .06); }
@@ -897,7 +902,7 @@
                 <div><h3 id="backup-method-title" class="text-lg font-bold">選擇匯出方式</h3><p id="backup-method-description" class="mt-2 text-sm leading-6 text-gray-300">選擇位置。</p></div>
             </div>
             <div class="mt-6 grid grid-cols-2 gap-3">
-                <button type="button" onclick="chooseBackupMethod('local')" class="rounded-2xl border border-darkBorder bg-darkBg p-4 text-left transition hover:border-accentBlue"><i class="fa-solid fa-file-arrow-down text-accentBlue"></i><span id="backup-method-local-label" class="mt-2 block text-sm font-bold">本機 JSON</span><span class="mt-1 block text-xs text-gray-500">備份檔</span></button>
+                <button type="button" onclick="chooseBackupMethod('local')" class="rounded-2xl border border-darkBorder bg-darkBg p-4 text-left transition hover:border-accentBlue"><i id="backup-method-local-icon" class="fa-solid fa-file-arrow-down text-accentBlue"></i><span id="backup-method-local-label" class="mt-2 block text-sm font-bold">本機 JSON</span><span class="mt-1 block text-xs text-gray-500">備份檔</span></button>
                 <button type="button" onclick="chooseBackupMethod('cloud')" class="rounded-2xl border border-darkBorder bg-darkBg p-4 text-left transition hover:border-emerald-400"><i class="fa-solid fa-cloud text-emerald-400"></i><span id="backup-method-cloud-label" class="mt-2 block text-sm font-bold">加密雲端</span><span class="mt-1 block text-xs text-gray-500">雲端備份</span></button>
             </div>
             <button type="button" onclick="closeBackupMethodPicker()" class="mt-4 w-full rounded-xl bg-darkCardSecondary py-3 text-sm font-bold text-gray-300 transition hover:text-white">取消</button>
@@ -1359,7 +1364,12 @@
             methodIcon.className = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-sm';
             methodIcon.style.backgroundColor = isExport ? 'rgba(59, 130, 246, .15)' : 'rgba(16, 185, 129, .16)';
             methodIcon.style.color = isExport ? '#2563eb' : '#059669';
-            methodIcon.innerHTML = `<i class="fa-solid ${isExport ? 'fa-file-export' : 'fa-file-import'} text-lg" aria-hidden="true"></i>`;
+            methodIcon.innerHTML = isExport
+                ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V3"/><path d="m7 8 5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>'
+                : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v13"/><path d="m7 11 5 5 5-5"/><path d="M5 19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/></svg>';
+            const localMethodIcon = document.getElementById('backup-method-local-icon');
+            localMethodIcon.className = `fa-solid ${isExport ? 'fa-file-arrow-up' : 'fa-file-arrow-down'}`;
+            localMethodIcon.style.color = isExport ? '#2563eb' : '#059669';
             document.getElementById('backup-method-local-label').textContent = isExport ? '匯出本機 JSON' : '匯入本機 JSON';
             document.getElementById('backup-method-cloud-label').textContent = isExport ? '匯出到雲端' : '從雲端匯入';
             modal.classList.remove('hidden');
@@ -2483,7 +2493,7 @@
             detailIcon.style.backgroundColor = sub.bgColor || '#252529';
             detailIcon.innerHTML = logoSrc
                 ? `<img src="${logoSrc}" alt="" class="w-full h-full object-cover">`
-                : `<i class="fa-solid ${safeIconClass(sub.icon)}"></i>`;
+                : `<i class="subscription-glyph-icon fa-solid ${safeIconClass(sub.icon)}"></i>`;
 
             document.getElementById('view-subscription-detail').classList.remove('hidden');
             document.getElementById('view-subscription-detail').classList.add('flex');
@@ -2695,7 +2705,8 @@
                 category: '影音娛樂', notes: '家庭方案', bgColor: '#080808', logo: '', icon: 'fa-film'
             };
             const nextPayment = getNextPaymentDate(previewSub);
-            const cardBg = cardLayout.coloredCard ? previewSub.bgColor : (document.documentElement.classList.contains('theme-light') ? '#ffffff' : '#1a1a1e');
+            const isLightTheme = document.documentElement.classList.contains('theme-light');
+            const cardBg = isLightTheme ? '#ffffff' : (cardLayout.coloredCard ? previewSub.bgColor : '#1a1a1e');
             const previewTwdAmount = formatCardAmountInteger(previewSub.amount * (usdToTwdRate || 32), 'TWD');
             const textClass = getTextColorClass(cardBg);
             const secondaryClass = getSecondaryTextColorClass(cardBg);
@@ -2895,7 +2906,7 @@
                     const logoSrc = safeImageSrc(sub.logo);
                     const logoHtml = logoSrc
                         ? `<img src="${logoSrc}" alt="" class="w-10 h-10 rounded-xl object-cover">`
-                        : `<div class="w-10 h-10 rounded-xl bg-gray-700/50 flex items-center justify-center text-base ${txtClass}"><i class="fa-solid ${safeIconClass(sub.icon)}"></i></div>`;
+                        : `<div class="w-10 h-10 rounded-xl bg-gray-700/50 flex items-center justify-center text-base ${txtClass}"><i class="subscription-glyph-icon fa-solid ${safeIconClass(sub.icon)}"></i></div>`;
 
                     const cycleBadge = sub.paymentType === 'onetime' 
                         ? `<span class="text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-black/10 ${secTxtClass}">一次性</span>`
@@ -3101,7 +3112,7 @@
                     const logoSrc = safeImageSrc(sub.logo);
                     const iconHtml = logoSrc
                         ? `<img src="${logoSrc}" alt="" class="${iconClass}">`
-                        : `<div class="${iconClass} text-sm flex items-center justify-center font-bold text-white" style="background-color:${getBuiltInIconBackground(sub.bgColor || '#252529')}"><i class="fa-solid ${safeIconClass(sub.icon)}"></i></div>`;
+                        : `<div class="${iconClass} text-sm flex items-center justify-center font-bold text-white" style="background-color:${getBuiltInIconBackground(sub.bgColor || '#252529')}"><i class="subscription-glyph-icon fa-solid ${safeIconClass(sub.icon)}"></i></div>`;
                     return isStacked
                         ? `<span class="calendar-stack-card" style="--stack-index:${index}; --stack-offset:${stackOffset}px; z-index:${index + 1}">${iconHtml}</span>`
                         : iconHtml;
@@ -3148,7 +3159,7 @@
                 const logoSrc = safeImageSrc(sub.logo);
                 const icon = logoSrc
                     ? `<img src="${logoSrc}" alt="" class="w-12 h-12 rounded-xl object-cover">`
-                    : `<div class="w-12 h-12 rounded-xl flex items-center justify-center text-lg" style="background-color: ${escapeHTML(sub.bgColor || '#252529')}"><i class="fa-solid ${safeIconClass(sub.icon)}"></i></div>`;
+                    : `<div class="w-12 h-12 rounded-xl flex items-center justify-center text-lg" style="background-color: ${escapeHTML(sub.bgColor || '#252529')}"><i class="subscription-glyph-icon fa-solid ${safeIconClass(sub.icon)}"></i></div>`;
                 const convertedAmount = convertToTwd(sub.amount, sub.currency || 'TWD');
                 const amount = convertedAmount !== null ? formatCardAmount(convertedAmount, 'TWD') : formatCardAmount(sub.amount, sub.currency);
                 return `<button type="button" data-subscription-id="${escapeHTML(sub.id)}" class="calendar-day-item w-full flex items-center gap-3 rounded-2xl bg-darkCardSecondary p-3 text-left hover:bg-[#303035] transition"><span class="shrink-0">${icon}</span><span class="min-w-0 flex-1"><span class="block truncate font-bold">${escapeHTML(sub.name || '未命名訂閱')}</span><span class="block mt-0.5 text-xs text-gray-400">${escapeHTML(subscriptionCycleLabel(sub))}・${escapeHTML(sub.paymentMethod || '未設定')}</span></span><span class="text-right font-extrabold">${amount}</span><i class="fa-solid fa-chevron-right text-sm text-gray-500"></i></button>`;
