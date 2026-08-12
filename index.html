@@ -2,7 +2,7 @@
 <html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0f0f12">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -61,48 +61,22 @@
             --theme-card-secondary: 37 37 41;
             --theme-border: 42 42 48;
         }
-        html { background-color: #0f0f12; color-scheme: dark; }
         html.theme-light {
             --theme-bg: 242 244 248;
             --theme-card: 255 255 255;
             --theme-card-secondary: 235 238 244;
             --theme-border: 209 214 224;
-            background-color: #f2f4f8;
             color-scheme: light;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #0f0f12;
             color: #ffffff;
-            padding-top: env(safe-area-inset-top, 0px);
             -webkit-tap-highlight-color: transparent;
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
         html.theme-light body { background-color: #f2f4f8; color: #111827; }
-        #view-subscription-detail,
-        #modal-sub,
-        #modal-settings,
-        #modal-theme-settings,
-        #modal-card-layout,
-        #modal-manager {
-            padding-top: env(safe-area-inset-top, 0px);
-            bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
-            background-color: rgb(var(--theme-bg)) !important;
-        }
-        #view-subscription-detail,
-        #modal-sub,
-        #modal-theme-settings,
-        #modal-card-layout,
-        #modal-manager {
-            padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px));
-        }
-        #view-subscription-detail {
-            padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
-        }
-        #modal-settings {
-            padding-bottom: env(safe-area-inset-bottom, 0px);
-        }
         html.theme-light select { color-scheme: light; }
         html.theme-light select option { background-color: #fff; color: #111827; }
         html.theme-light .text-white { color: #111827 !important; }
@@ -216,16 +190,6 @@
         .subscription-swipe-actions { position: absolute; inset: 0 .5rem 0 auto; display: flex; width: 7.5rem; align-items: center; justify-content: flex-end; gap: .5rem; }
         .subscription-swipe-action { width: 2.75rem; height: 2.75rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, .2); }
         .subscription-swipe-card { position: relative; z-index: 1; will-change: transform; }
-        .auto-hide-top-bar {
-            visibility: visible;
-            background: transparent !important;
-            border-bottom-color: transparent !important;
-            -webkit-backdrop-filter: none !important;
-            backdrop-filter: none !important;
-            transition: transform 220ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease, visibility 0s linear 0s;
-            will-change: transform, opacity;
-        }
-        .auto-hide-top-bar.top-bar-hidden { transform: translate3d(0, calc(-100% - env(safe-area-inset-top, 0px)), 0); opacity: 0; visibility: hidden; pointer-events: none; transition-delay: 0s, 0s, 220ms; }
         .subscription-inactive-card { filter: grayscale(.25) brightness(.72); }
         .app-switch-track { width: 3rem; height: 1.75rem; flex-shrink: 0; border-radius: 9999px; background: #4b5563; transition: background-color 200ms ease; }
         .app-switch-thumb { position: absolute; left: .25rem; top: .25rem; width: 1.25rem; height: 1.25rem; border-radius: 9999px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); pointer-events: none; transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
@@ -468,9 +432,11 @@
             </div>
         </main>
 
-        <div class="fixed left-4 right-4 bottom-0 z-[60] max-w-md mx-auto flex gap-3 pointer-events-auto">
-            <button type="button" onclick="editSelectedSubscription()" class="flex-1 py-3 bg-darkCardSecondary hover:bg-[#303035] text-white rounded-2xl font-bold transition"><i class="fa-solid fa-pen mr-2"></i>編輯</button>
-            <button type="button" onclick="deleteSelectedSubscription()" class="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold transition"><i class="fa-solid fa-trash mr-2"></i>刪除</button>
+        <div class="fixed bottom-0 left-0 right-0 z-[60] bg-darkCard/95 backdrop-blur-md border-t border-darkBorder p-4">
+            <div class="max-w-md mx-auto flex gap-3">
+                <button type="button" onclick="editSelectedSubscription()" class="flex-1 py-3 bg-darkCardSecondary hover:bg-[#303035] text-white rounded-2xl font-bold transition"><i class="fa-solid fa-pen mr-2"></i>編輯</button>
+                <button type="button" onclick="deleteSelectedSubscription()" class="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold transition"><i class="fa-solid fa-trash mr-2"></i>刪除</button>
+            </div>
         </div>
     </section>
 
@@ -489,7 +455,7 @@
     </div>
 
     <!-- 浮動新增按鈕 (FAB) -->
-    <button onclick="openAddModal()" style="bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));" class="fixed right-6 w-16 h-16 bg-accentBlue text-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-blue-600 transition active:scale-95 z-20">
+    <button onclick="openAddModal()" class="fixed bottom-6 right-6 w-16 h-16 bg-accentBlue text-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-blue-600 transition active:scale-95 z-20">
         <i class="fa-solid fa-plus"></i>
     </button>
 
@@ -1102,7 +1068,6 @@
             setupPageBackgroundSwipe();
             setupEdgeBackSwipe();
             setupTapTopToScroll();
-            setupAutoHideTopBars();
             setupOverlayScrollLock();
             requestPortraitOrientationLock();
             if (location.protocol === 'https:' && 'serviceWorker' in navigator) {
@@ -2084,25 +2049,15 @@
 
         function animateOverlayIn(surface, elements = [surface]) {
             if (!surface) return;
-            surface.querySelectorAll('.auto-hide-top-bar').forEach(header => {
-                header.classList.remove('top-bar-hidden');
-            });
-            const fullScreenSurfaceIds = new Set([
-                'view-subscription-detail', 'modal-sub', 'modal-settings',
-                'modal-theme-settings', 'modal-card-layout', 'modal-manager'
-            ]);
-            const keepOpaque = elements.length === 1 && elements[0] === surface && fullScreenSurfaceIds.has(surface.id);
             elements.forEach(element => {
-                element.style.willChange = keepOpaque ? 'transform' : 'transform, opacity';
+                element.style.willChange = 'transform, opacity';
                 element.style.transition = 'none';
                 element.style.transform = 'translate3d(28px, 0, 0)';
-                element.style.opacity = keepOpaque ? '1' : '0';
+                element.style.opacity = '0';
             });
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 elements.forEach(element => {
-                    element.style.transition = keepOpaque
-                        ? 'transform 240ms cubic-bezier(.22,.8,.2,1)'
-                        : 'transform 240ms cubic-bezier(.22,.8,.2,1), opacity 180ms ease-out';
+                    element.style.transition = 'transform 240ms cubic-bezier(.22,.8,.2,1), opacity 180ms ease-out';
                     element.style.transform = 'translate3d(0, 0, 0)';
                     element.style.opacity = '1';
                 });
@@ -2677,17 +2632,12 @@
             const preference = getThemePreference();
             const theme = resolvedTheme(preference);
             const useLight = theme === 'light';
-            const themeColor = useLight ? '#f2f4f8' : '#0f0f12';
             document.documentElement.classList.toggle('theme-light', useLight);
             document.documentElement.classList.toggle('dark', !useLight);
-            document.documentElement.style.removeProperty('background-color');
-            document.documentElement.style.removeProperty('color-scheme');
-            document.body.style.removeProperty('background-color');
             const themeMeta = document.querySelector('meta[name="theme-color"]');
             const statusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-            if (themeMeta) themeMeta.content = themeColor;
-            // 比照 Gym：固定使用透明狀態列，底色直接由目前頁面主題提供。
-            if (statusMeta) statusMeta.content = 'black-translucent';
+            if (themeMeta) themeMeta.content = useLight ? '#f2f4f8' : '#0f0f12';
+            if (statusMeta) statusMeta.content = useLight ? 'default' : 'black-translucent';
             const caption = document.getElementById('theme-preference-caption');
             if (caption) caption.textContent = preference === 'auto' ? `自動・目前${useLight ? '淺色' : '深色'}` : useLight ? '淺色' : '深色';
             renderThemePreferenceOptions();
@@ -3441,37 +3391,6 @@
                     switchView('list');
                 }
             }, { passive: true });
-        }
-
-        function setupAutoHideTopBars() {
-            const bindings = [
-                { scroller: window, header: document.getElementById('app-header') },
-                { scroller: document.getElementById('view-subscription-detail'), header: document.querySelector('#view-subscription-detail > header') },
-                { scroller: document.getElementById('modal-sub'), header: document.querySelector('#modal-sub > div:first-child') },
-                { scroller: document.getElementById('modal-settings'), header: document.querySelector('#modal-settings > div > div:first-child') },
-                { scroller: document.getElementById('modal-theme-settings'), header: document.querySelector('#modal-theme-settings > header') },
-                { scroller: document.getElementById('modal-card-layout'), header: document.querySelector('#modal-card-layout > header') },
-                { scroller: document.getElementById('modal-manager'), header: document.querySelector('#modal-manager > div > div:first-child') }
-            ].filter(binding => binding.scroller && binding.header);
-
-            bindings.forEach(({ scroller, header }) => {
-                header.classList.add('auto-hide-top-bar');
-                let lastTop = scroller === window ? window.scrollY : scroller.scrollTop;
-                let ticking = false;
-                scroller.addEventListener('scroll', () => {
-                    if (ticking) return;
-                    ticking = true;
-                    requestAnimationFrame(() => {
-                        const currentTop = scroller === window ? window.scrollY : scroller.scrollTop;
-                        const delta = currentTop - lastTop;
-                        if (currentTop <= 8) header.classList.remove('top-bar-hidden');
-                        else if (delta > 5) header.classList.add('top-bar-hidden');
-                        else if (delta < -5) header.classList.remove('top-bar-hidden');
-                        lastTop = Math.max(0, currentTop);
-                        ticking = false;
-                    });
-                }, { passive: true });
-            });
         }
 
         function setupTapTopToScroll() {
