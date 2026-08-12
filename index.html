@@ -1920,6 +1920,56 @@
 
         let viewTransitionTimer = null;
 
+        function animateOverlayIn(surface, elements = [surface]) {
+            if (!surface) return;
+            elements.forEach(element => {
+                element.style.willChange = 'transform, opacity';
+                element.style.transition = 'none';
+                element.style.transform = 'translate3d(28px, 0, 0)';
+                element.style.opacity = '0';
+            });
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                elements.forEach(element => {
+                    element.style.transition = 'transform 240ms cubic-bezier(.22,.8,.2,1), opacity 180ms ease-out';
+                    element.style.transform = 'translate3d(0, 0, 0)';
+                    element.style.opacity = '1';
+                });
+                window.setTimeout(() => elements.forEach(element => {
+                    element.style.transition = '';
+                    element.style.transform = '';
+                    element.style.opacity = '';
+                    element.style.willChange = '';
+                }), 250);
+            }));
+        }
+
+        function closeOverlaySmooth(surface, elements = [surface], onClosed = null) {
+            if (!surface || surface.classList.contains('hidden')) return;
+            const finish = () => {
+                surface.classList.add('hidden');
+                surface.classList.remove('flex');
+                elements.forEach(element => {
+                    element.style.transition = '';
+                    element.style.transform = '';
+                    element.style.opacity = '';
+                    element.style.willChange = '';
+                });
+                onClosed?.();
+            };
+            if (surface.dataset.skipCloseAnimation === 'true') {
+                delete surface.dataset.skipCloseAnimation;
+                finish();
+                return;
+            }
+            elements.forEach(element => {
+                element.style.willChange = 'transform, opacity';
+                element.style.transition = 'transform 220ms cubic-bezier(.4,0,.8,.2), opacity 170ms ease-in';
+                element.style.transform = 'translate3d(42px, 0, 0)';
+                element.style.opacity = '0';
+            });
+            window.setTimeout(finish, 220);
+        }
+
         function switchView(view) {
             const listView = document.getElementById('view-list-container');
             const calView = document.getElementById('view-calendar-container');
@@ -2288,11 +2338,12 @@
             const detailView = document.getElementById('view-subscription-detail');
             detailView.scrollTop = 0;
             requestAnimationFrame(() => { detailView.scrollTop = 0; });
+            animateOverlayIn(detailView, Array.from(detailView.children));
         }
 
         function closeSubscriptionDetail() {
-            document.getElementById('view-subscription-detail').classList.add('hidden');
-            document.getElementById('view-subscription-detail').classList.remove('flex');
+            const detailView = document.getElementById('view-subscription-detail');
+            closeOverlaySmooth(detailView, Array.from(detailView.children));
             selectedSubscriptionId = null;
         }
 
@@ -2394,12 +2445,12 @@
             const modal = document.getElementById('modal-card-layout');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            animateOverlayIn(modal);
         }
 
         function closeCardLayoutModal() {
             const modal = document.getElementById('modal-card-layout');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            closeOverlaySmooth(modal);
         }
 
         function updateCardLayout(key, value) {
@@ -3169,7 +3220,7 @@
                 const touch = event.changedTouches[0];
                 const deltaX = touch.clientX - startPoint.x;
                 const deltaY = touch.clientY - startPoint.y;
-                const { action, elements } = startPoint;
+                const { action, elements, element } = startPoint;
                 startPoint = null;
                 if (deltaX < 70 || Math.abs(deltaX) <= Math.abs(deltaY)) {
                     updateSurfaces(elements, {
@@ -3187,6 +3238,7 @@
                 });
                 resetTimer = window.setTimeout(() => {
                     resetSurfaces(elements);
+                    element.dataset.skipCloseAnimation = 'true';
                     action();
                 }, 210);
             }, { passive: true, capture: true });
@@ -3540,6 +3592,7 @@
             modal.classList.add('flex');
             modal.scrollTop = 0;
             requestAnimationFrame(() => { modal.scrollTop = 0; });
+            animateOverlayIn(modal);
         }
 
         function openEditModal(id) {
@@ -3601,6 +3654,7 @@
             modal.classList.add('flex');
             modal.scrollTop = 0;
             requestAnimationFrame(() => { modal.scrollTop = 0; });
+            animateOverlayIn(modal);
         }
 
         function saveSubscription(e) {
@@ -3657,8 +3711,7 @@
 
         function closeModal(id) {
             const modal = document.getElementById(id);
-            modal.classList.add('hidden');
-            if(id === 'modal-sub') modal.classList.remove('flex');
+            closeOverlaySmooth(modal);
             if(id === 'modal-manager') pendingSubscriptionManagerType = null;
         }
 
@@ -3693,14 +3746,18 @@
             document.getElementById('default-currency').value = defaultCurrency;
             document.getElementById('display-currency').value = displayCurrency;
             refreshCustomSelects();
-            document.getElementById('modal-settings').classList.remove('hidden');
+            const modal = document.getElementById('modal-settings');
+            modal.classList.remove('hidden');
+            animateOverlayIn(modal);
         }
         function openCustomManager(type) {
             managerType = type;
             editingManagerIndex = null;
             document.getElementById('manager-title').innerText = type === 'payment' ? '管理付款方式' : '管理類別';
             renderManagerList();
-            document.getElementById('modal-manager').classList.remove('hidden');
+            const modal = document.getElementById('modal-manager');
+            modal.classList.remove('hidden');
+            animateOverlayIn(modal);
             if (pendingSubscriptionManagerType === type) {
                 requestAnimationFrame(() => document.getElementById('manager-new-input').focus());
             }
@@ -3718,11 +3775,15 @@
                     <i class="${iconFamily(icon)} ${icon}"></i>
                 </button>
             `).join('');
-            document.getElementById('modal-manager-icon-picker').classList.remove('hidden');
+            const modal = document.getElementById('modal-manager-icon-picker');
+            const wasHidden = modal.classList.contains('hidden');
+            modal.classList.remove('hidden');
+            if (wasHidden) animateOverlayIn(modal);
         }
 
         function closeManagerIconPicker() {
-            document.getElementById('modal-manager-icon-picker').classList.add('hidden');
+            const modal = document.getElementById('modal-manager-icon-picker');
+            closeOverlaySmooth(modal);
             iconPickerManagerIndex = null;
         }
 
