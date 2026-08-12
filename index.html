@@ -63,7 +63,6 @@
         }
         html {
             background-color: #0f0f12;
-            color-scheme: dark;
         }
         html.theme-light {
             --theme-bg: 242 244 248;
@@ -75,7 +74,7 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0f0f12;
+            background-color: rgb(var(--theme-bg));
             color: #ffffff;
             -webkit-tap-highlight-color: transparent;
             -ms-overflow-style: none;
@@ -83,7 +82,7 @@
         }
         html.theme-light body { background-color: #f2f4f8; color: #111827; }
         .main-top-bar {
-            background: transparent !important;
+            background-color: rgb(var(--theme-bg)) !important;
             border-bottom-color: transparent !important;
             -webkit-backdrop-filter: none !important;
             backdrop-filter: none !important;
@@ -2670,13 +2669,8 @@
             const themeColor = useLight ? '#f2f4f8' : '#0f0f12';
             document.documentElement.classList.toggle('theme-light', useLight);
             document.documentElement.classList.toggle('dark', !useLight);
-            document.documentElement.style.backgroundColor = themeColor;
-            document.documentElement.style.colorScheme = useLight ? 'light' : 'dark';
-            document.body.style.backgroundColor = themeColor;
             const themeMeta = document.querySelector('meta[name="theme-color"]');
-            const statusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
             if (themeMeta) themeMeta.content = themeColor;
-            if (statusMeta) statusMeta.content = 'black-translucent';
             const caption = document.getElementById('theme-preference-caption');
             if (caption) caption.textContent = preference === 'auto' ? `自動・目前${useLight ? '淺色' : '深色'}` : useLight ? '淺色' : '深色';
             renderThemePreferenceOptions();
