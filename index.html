@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0f0f12">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="訂閱管理">
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png">
     <link rel="shortcut icon" type="image/png" href="favicon.png">
@@ -3019,10 +3019,7 @@
 
         function closeSubscriptionDetail() {
             const detailView = document.getElementById('view-subscription-detail');
-            closeOverlaySmooth(detailView, [detailView], () => {
-                window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-                document.getElementById('app-header')?.classList.remove('is-hidden');
-            });
+            closeOverlaySmooth(detailView);
             selectedSubscriptionId = null;
         }
 
@@ -3153,7 +3150,7 @@
             const themeMeta = document.querySelector('meta[name="theme-color"]');
             const statusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
             if (themeMeta) themeMeta.content = useLight ? '#f2f4f8' : '#0f0f12';
-            if (statusMeta) statusMeta.content = useLight ? 'default' : 'black-translucent';
+            if (statusMeta) statusMeta.content = useLight ? 'default' : 'black';
             const caption = document.getElementById('theme-preference-caption');
             if (caption) caption.textContent = preference === 'auto' ? `自動・目前${useLight ? '淺色' : '深色'}` : useLight ? '淺色' : '深色';
             renderThemePreferenceOptions();
