@@ -2501,22 +2501,12 @@
             const detailView = document.getElementById('view-subscription-detail');
             detailView.scrollTop = 0;
             requestAnimationFrame(() => { detailView.scrollTop = 0; });
-            if (shouldAnimate) {
-                // 背景必須立即保持不透明，避免進場第一幀露出列表與滑動操作按鈕。
-                const detailBackground = detailView.querySelector(':scope > [aria-hidden="true"]');
-                if (detailBackground) {
-                    detailBackground.style.transition = '';
-                    detailBackground.style.transform = '';
-                    detailBackground.style.opacity = '1';
-                    detailBackground.style.willChange = '';
-                }
-                animateOverlayIn(detailView, Array.from(detailView.children).filter(element => element !== detailBackground));
-            }
+            if (shouldAnimate) animateOverlayIn(detailView);
         }
 
         function closeSubscriptionDetail() {
             const detailView = document.getElementById('view-subscription-detail');
-            closeOverlaySmooth(detailView, Array.from(detailView.children));
+            closeOverlaySmooth(detailView);
             selectedSubscriptionId = null;
         }
 
@@ -3418,8 +3408,7 @@
                 if (!themeSettings.classList.contains('hidden')) return createBackAction(themeSettings, closeThemeSettingsModal);
                 if (!cardLayout.classList.contains('hidden')) return createBackAction(cardLayout, closeCardLayoutModal);
                 if (!subModal.classList.contains('hidden')) return createBackAction(subModal, () => closeModal('modal-sub'));
-                // iOS 會讓 transformed 祖先中的 fixed 底欄失去視窗定位，因此詳情頁改為分別移動子元素。
-                if (!detail.classList.contains('hidden')) return createBackAction(detail, closeSubscriptionDetail, Array.from(detail.children));
+                if (!detail.classList.contains('hidden')) return createBackAction(detail, closeSubscriptionDetail);
                 if (!iconPicker.classList.contains('hidden')) return createBackAction(iconPicker, closeManagerIconPicker);
                 if (!manager.classList.contains('hidden')) return createBackAction(manager, () => closeModal('modal-manager'));
                 if (!settings.classList.contains('hidden')) return createBackAction(settings, () => closeModal('modal-settings'));
