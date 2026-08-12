@@ -474,7 +474,7 @@
 
             <div class="bg-darkCard rounded-3xl p-5 flex justify-between items-center border border-darkBorder/50">
                 <span class="text-lg text-gray-400">付款提醒</span>
-                <span id="detail-notification-status" class="text-lg font-bold text-green-400"><i class="fa-solid fa-bell mr-1"></i>已開啟</span>
+                <button type="button" id="detail-notification-toggle" onclick="toggleSelectedSubscriptionNotification()" class="transition active:scale-95" aria-label="切換付款提醒"><span id="detail-notification-status" class="text-lg font-bold text-green-400"><i class="fa-solid fa-bell mr-1"></i>已開啟</span></button>
             </div>
 
             <div class="bg-darkCard rounded-3xl p-5 space-y-5 border border-darkBorder/50">
@@ -2963,6 +2963,7 @@
             const notificationEnabled = sub.notificationEnabled !== false;
             detailNotificationStatus.className = `text-lg font-bold ${notificationEnabled ? 'text-green-400' : 'text-gray-400'}`;
             detailNotificationStatus.innerHTML = `<i class="fa-solid ${notificationEnabled ? 'fa-bell' : 'fa-bell-slash'} mr-1"></i>${notificationEnabled ? '已開啟' : '已關閉'}`;
+            document.getElementById('detail-notification-toggle').setAttribute('aria-label', notificationEnabled ? '關閉付款提醒' : '開啟付款提醒');
             document.getElementById('detail-next-date').textContent = nextPayment ? formatDisplayDate(nextPaymentKey) : '無後續付款';
             document.getElementById('detail-period-amount').textContent = subscriptionAmountDetail(sub);
             document.getElementById('detail-days-until').textContent = nextPayment ? daysUntil(nextPaymentKey) : '—';
@@ -3552,6 +3553,14 @@
 
         function toggleSelectedSubscriptionStatus() {
             if (selectedSubscriptionId) toggleSubscriptionStatus(selectedSubscriptionId);
+        }
+
+        function toggleSelectedSubscriptionNotification() {
+            const sub = subscriptions.find(item => item.id === selectedSubscriptionId);
+            if (!sub) return;
+            sub.notificationEnabled = sub.notificationEnabled === false;
+            if (!saveData()) return;
+            openSubscriptionDetail(sub.id, false);
         }
 
         function quickDeleteSubscription(id) {
