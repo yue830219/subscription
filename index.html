@@ -2,7 +2,7 @@
 <html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0f0f12">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -61,22 +61,40 @@
             --theme-card-secondary: 37 37 41;
             --theme-border: 42 42 48;
         }
+        html { background-color: #0f0f12; }
         html.theme-light {
             --theme-bg: 242 244 248;
             --theme-card: 255 255 255;
             --theme-card-secondary: 235 238 244;
             --theme-border: 209 214 224;
+            background-color: #f2f4f8;
             color-scheme: light;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #0f0f12;
             color: #ffffff;
+            padding-top: env(safe-area-inset-top, 0px);
             -webkit-tap-highlight-color: transparent;
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
         html.theme-light body { background-color: #f2f4f8; color: #111827; }
+        .main-top-bar {
+            background: transparent !important;
+            border-bottom-color: transparent !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            will-change: transform, opacity;
+            transition: transform 220ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease, visibility 0s linear 0s;
+        }
+        .main-top-bar.is-hidden {
+            transform: translate3d(0, calc(-100% - env(safe-area-inset-top, 0px)), 0);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition-delay: 0s, 0s, 220ms;
+        }
         html.theme-light select { color-scheme: light; }
         html.theme-light select option { background-color: #fff; color: #111827; }
         html.theme-light .text-white { color: #111827 !important; }
@@ -232,7 +250,7 @@
     </div>
 
     <!-- 頂部導航欄 -->
-    <header id="app-header" class="p-4 flex items-center justify-between sticky top-0 bg-darkBg/90 backdrop-blur-md z-10 border-b border-darkBorder/30">
+    <header id="app-header" class="main-top-bar p-4 flex items-center justify-between sticky top-0 bg-darkBg/90 backdrop-blur-md z-10 border-b border-darkBorder/30">
         <div class="flex items-center space-x-2">
             <button id="btn-view-analysis" onclick="switchView('analysis')" class="w-10 h-10 rounded-full bg-darkCard flex items-center justify-center text-gray-300 hover:text-white transition" aria-label="分析圖表">
                 <i class="fa-solid fa-chart-simple text-lg"></i>
@@ -1068,6 +1086,7 @@
             setupPageBackgroundSwipe();
             setupEdgeBackSwipe();
             setupTapTopToScroll();
+            setupMainTopBarAutoHide();
             setupOverlayScrollLock();
             requestPortraitOrientationLock();
             if (location.protocol === 'https:' && 'serviceWorker' in navigator) {
@@ -2144,6 +2163,7 @@
             const views = { list: listView, calendar: calView, analysis: analysisView };
             const targetView = views[view];
             if (!targetView) return;
+            document.getElementById('app-header').classList.remove('is-hidden');
             const activeEntry = Object.entries(views).find(([, item]) => !item.classList.contains('hidden'));
             const activeView = activeEntry?.[1];
 
@@ -2637,7 +2657,7 @@
             const themeMeta = document.querySelector('meta[name="theme-color"]');
             const statusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
             if (themeMeta) themeMeta.content = useLight ? '#f2f4f8' : '#0f0f12';
-            if (statusMeta) statusMeta.content = useLight ? 'default' : 'black-translucent';
+            if (statusMeta) statusMeta.content = 'black-translucent';
             const caption = document.getElementById('theme-preference-caption');
             if (caption) caption.textContent = preference === 'auto' ? `自動・目前${useLight ? '淺色' : '深色'}` : useLight ? '淺色' : '深色';
             renderThemePreferenceOptions();
@@ -3320,6 +3340,34 @@
                 event.stopPropagation();
                 ignoreNextClick = false;
             }, true);
+        }
+
+        function setupMainTopBarAutoHide() {
+            const header = document.getElementById('app-header');
+            let lastScrollY = window.scrollY;
+            let ticking = false;
+
+            window.addEventListener('scroll', () => {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(() => {
+                    const scrollY = window.scrollY;
+                    const listVisible = !document.getElementById('view-list-container').classList.contains('hidden');
+                    const calendarVisible = !document.getElementById('view-calendar-container').classList.contains('hidden');
+                    const delta = scrollY - lastScrollY;
+
+                    if (!listVisible && !calendarVisible) {
+                        header.classList.remove('is-hidden');
+                    } else if (scrollY <= 8 || delta < -4) {
+                        header.classList.remove('is-hidden');
+                    } else if (scrollY > 56 && delta > 4) {
+                        header.classList.add('is-hidden');
+                    }
+
+                    lastScrollY = Math.max(0, scrollY);
+                    ticking = false;
+                });
+            }, { passive: true });
         }
 
         function setupHeaderSwipe() {
