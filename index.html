@@ -92,20 +92,6 @@
             pointer-events: none;
             transition-delay: 0s, 0s, 220ms;
         }
-        #ios-status-bar-shield {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3.25rem;
-            z-index: 40;
-            pointer-events: none;
-            background-color: rgb(var(--theme-bg));
-            transform: translate3d(0, 0, 0);
-            -webkit-transform: translate3d(0, 0, 0);
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-        }
         #floating-add-button {
             position: fixed !important;
             bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + .75rem)) !important;
@@ -303,10 +289,8 @@
         <i class="fa-solid fa-mobile-screen-button text-5xl text-accentBlue"></i>
         <p class="text-xl font-bold">請將手機轉回直向</p>
     </div>
-    <div id="ios-status-bar-shield" aria-hidden="true"></div>
-
     <!-- 頂部導航欄 -->
-    <header id="app-header" class="main-top-bar p-4 flex items-center justify-between sticky top-0 bg-darkBg/90 backdrop-blur-md z-[41] border-b border-darkBorder/30">
+    <header id="app-header" class="main-top-bar p-4 flex items-center justify-between sticky top-0 bg-darkBg/90 backdrop-blur-md z-10 border-b border-darkBorder/30">
         <div class="flex items-center space-x-2">
             <button id="btn-view-analysis" onclick="switchView('analysis')" class="w-10 h-10 rounded-full bg-darkCard flex items-center justify-center text-gray-300 hover:text-white transition" aria-label="分析圖表">
                 <i class="fa-solid fa-chart-simple text-lg"></i>
