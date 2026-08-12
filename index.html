@@ -489,7 +489,7 @@
                 <span aria-hidden="true" class="absolute left-1/2 top-1/2 ml-24 -translate-y-1/2 w-[42px] h-[42px] rounded-full border-[3px] border-[#45454d] bg-[#101014] p-[5px] shadow-lg">
                     <span id="color-picker-preview" class="block w-full h-full rounded-full bg-[#252529] border border-white/20"></span>
                 </span>
-                <input type="color" id="color-picker-btn" value="#252529" oninput="onColorPicked(this.value)" aria-label="選擇背景顏色" title="選擇背景顏色" class="color-picker-input absolute left-1/2 top-1/2 ml-24 -translate-y-1/2 w-[42px] h-[42px] cursor-pointer opacity-0">
+                <input type="color" id="color-picker-btn" value="#252529" oninput="onColorPicked(this.value)" onchange="onColorPicked(this.value)" aria-label="選擇背景顏色" title="選擇背景顏色" class="color-picker-input absolute left-1/2 top-1/2 ml-24 -translate-y-1/2 w-[42px] h-[42px] cursor-pointer opacity-0">
             </div>
             <input type="file" id="sub-logo-file" accept="image/png,image/jpeg,image/gif,image/webp" onchange="previewLogo(event)" class="hidden">
 
@@ -618,7 +618,7 @@
             
             <div class="flex flex-col items-center space-y-4">
                 <div class="w-48 h-48 rounded-full relative overflow-hidden border-4 border-darkBorder shadow-inner flex items-center justify-center" style="background: conic-gradient(from 0deg, red, yellow, green, cyan, blue, magenta, red);">
-                    <input type="color" id="native-color-picker" value="#252529" onchange="onColorPicked(this.value)" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer scale-150">
+                    <input type="color" id="native-color-picker" value="#252529" oninput="onColorPicked(this.value)" onchange="onColorPicked(this.value)" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer scale-150">
                     <div class="w-16 h-16 rounded-full border-2 border-white shadow-md pointer-events-none" id="color-wheel-center" style="background-color: #252529;"></div>
                 </div>
                 
@@ -3566,7 +3566,8 @@
             const match = /^#([0-9a-f]{6})$/i.exec(hex || '');
             if (!match) return '#252529';
             const channels = [0, 2, 4].map(offset => parseInt(match[1].slice(offset, offset + 2), 16));
-            const lightAmount = document.documentElement.classList.contains('theme-light') ? 0.78 : 0.16;
+            // 圖示底色不跟隨佈景主題改變，確保同一個選色在淺色與深色模式一致。
+            const lightAmount = 0.16;
             const lighterChannels = channels.map(channel => Math.round(channel + (255 - channel) * lightAmount));
             return `rgb(${lighterChannels.join(', ')})`;
         }
@@ -3668,24 +3669,25 @@
             modal.classList.remove('flex');
         }
 
+        function syncSubscriptionColor(hex, updateHexInput = true) {
+            const normalized = String(hex || '').trim().toUpperCase();
+            if (!/^#[0-9A-F]{6}$/.test(normalized)) return false;
+            document.getElementById('native-color-picker').value = normalized;
+            document.getElementById('color-picker-btn').value = normalized;
+            if (updateHexInput) document.getElementById('color-hex-input').value = normalized;
+            document.getElementById('color-wheel-center').style.backgroundColor = normalized;
+            document.getElementById('color-picker-preview').style.backgroundColor = normalized;
+            document.getElementById('modal-sub').dataset.bgColor = normalized;
+            updateBuiltInIconBackground(normalized);
+            return true;
+        }
+
         function onColorPicked(hex) {
-            document.getElementById('color-picker-btn').value = hex;
-            document.getElementById('color-hex-input').value = hex;
-            document.getElementById('color-wheel-center').style.backgroundColor = hex;
-            document.getElementById('color-picker-preview').style.backgroundColor = hex;
-            document.getElementById('modal-sub').dataset.bgColor = hex;
-            updateBuiltInIconBackground(hex);
+            syncSubscriptionColor(hex);
         }
 
         function onHexInput(hex) {
-            if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
-                document.getElementById('native-color-picker').value = hex;
-                document.getElementById('color-picker-btn').value = hex;
-                document.getElementById('color-wheel-center').style.backgroundColor = hex;
-                document.getElementById('color-picker-preview').style.backgroundColor = hex;
-                document.getElementById('modal-sub').dataset.bgColor = hex;
-                updateBuiltInIconBackground(hex);
-            }
+            syncSubscriptionColor(hex, false);
         }
 
         // 首次計費日期滾輪 Modal 控制 (第二張截圖設計)
