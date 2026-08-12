@@ -348,6 +348,7 @@
     </main>
 
     <!-- 檢視二：日曆模式 (Calendar View) -->
+    <div id="calendar-back-swipe-stage">
     <main id="view-calendar-container" class="relative left-1/2 w-screen max-w-2xl -translate-x-1/2 p-4 hidden space-y-4 touch-pan-y">
         <div class="flex items-center justify-between">
             <h2 id="calendar-month-year" class="text-xl font-bold">2026年 8月</h2>
@@ -379,6 +380,7 @@
             </div>
         </div>
     </main>
+    </div>
 
     <!-- 檢視三：分析模式 -->
     <main id="view-analysis-container" class="p-4 hidden space-y-4 pb-10 touch-pan-y">
@@ -3864,12 +3866,20 @@
             const getBackAction = () => {
                 const getVisible = id => document.getElementById(id);
                 const createBackAction = (element, action, elements = [element], backgroundElements = []) => ({ element, elements, backgroundElements, action });
-                const getBasePageElements = () => [
-                    document.getElementById('app-header'),
-                    ['view-list-container', 'view-calendar-container', 'view-analysis-container']
-                        .map(getVisible).find(view => !view.classList.contains('hidden')),
-                    document.querySelector('button[onclick="openAddModal()"]')
-                ].filter(Boolean);
+                const getBasePageElements = () => {
+                    const activeView = ['view-list-container', 'view-calendar-container', 'view-analysis-container']
+                        .map(getVisible).find(view => !view.classList.contains('hidden'));
+                    // 日曆本體有 -translate-x-1/2 作為版面置中；動畫改作用在
+                    // 外層舞台，避免覆寫這個既有 transform 而在收尾時閃動。
+                    const animatedView = activeView?.id === 'view-calendar-container'
+                        ? document.getElementById('calendar-back-swipe-stage')
+                        : activeView;
+                    return [
+                        document.getElementById('app-header'),
+                        animatedView,
+                        document.querySelector('button[onclick="openAddModal()"]')
+                    ].filter(Boolean);
+                };
                 const themeSettings = getVisible('modal-theme-settings');
                 const cardLayout = getVisible('modal-card-layout');
                 const subModal = getVisible('modal-sub');
@@ -3908,19 +3918,7 @@
             };
 
             const updateSurfaces = (elements, styles) => {
-                elements.forEach(element => {
-                    const nextStyles = { ...styles };
-                    // 日曆以 -translate-x-1/2 讓寬版容器置中。互動返回時若直接
-                    // 覆寫 transform，會暫時失去這個 50% 位移而被推到右側；把
-                    // 手勢位移加在原本的置中位移上，拖曳期間也能維持正確位置。
-                    if (element.id === 'view-calendar-container' && typeof nextStyles.transform === 'string') {
-                        const offset = nextStyles.transform.match(/^translate3d\((-?[\d.]+)px, 0, 0\)$/)?.[1];
-                        if (offset !== undefined) {
-                            nextStyles.transform = `translate3d(calc(-50% + ${offset}px), 0, 0)`;
-                        }
-                    }
-                    Object.assign(element.style, nextStyles);
-                });
+                elements.forEach(element => Object.assign(element.style, styles));
             };
 
             const resetSurfaces = elements => {
