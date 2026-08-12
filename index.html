@@ -1775,9 +1775,11 @@
         }
 
         function accountProfileIsComplete() {
-            return isValidSubscriptionSyncEmail(localStorage.getItem('subscription_sync_email'))
-                && (localStorage.getItem('subscription_account_profile_ready') === 'true'
-                    || localStorage.getItem('subscription_cloud_login_completed') === 'true');
+            return isCloudAuthenticated() && isValidSubscriptionSyncEmail(localStorage.getItem('subscription_sync_email'));
+        }
+
+        function isCloudAuthenticated() {
+            return localStorage.getItem('subscription_cloud_login_completed') === 'true';
         }
 
         function accountAvatarMarkup(profile, sizeClass = 'w-20 h-20') {
@@ -1792,6 +1794,14 @@
             if (!container) return;
             const profile = getAccountProfile();
             const email = String(localStorage.getItem('subscription_sync_email') || '').trim();
+            if (!isCloudAuthenticated()) {
+                container.innerHTML = `
+                    <button type="button" onclick="openCloudLoginFromSettings()" class="w-full min-h-[5.25rem] rounded-2xl bg-darkCardSecondary p-3.5 flex items-center justify-between gap-3 text-left transition active:scale-[0.99] hover:bg-[#303035]">
+                        <span class="flex min-w-0 items-center gap-3"><span class="w-12 h-12 shrink-0 rounded-2xl bg-accentBlue/15 text-accentBlue flex items-center justify-center text-xl"><i class="fa-solid fa-right-to-bracket"></i></span><span class="min-w-0"><span class="block text-base font-bold">登入或註冊</span><span class="mt-1 block text-xs text-gray-400">登入後即可使用加密雲端備份</span></span></span>
+                        <i class="fa-solid fa-chevron-right shrink-0 text-sm text-gray-500"></i>
+                    </button>`;
+                return;
+            }
             const showCard = !forceEditor && !accountProfileEditing && accountProfileIsComplete();
 
             if (showCard) {
@@ -1803,7 +1813,8 @@
                             <span class="account-profile-name block truncate text-2xl font-semibold">${escapeHTML(displayName)}</span>
                             <span class="account-profile-email mt-1 block truncate text-base">${escapeHTML(email)}</span>
                         </span>
-                    </button>`;
+                    </button>
+                    <button type="button" onclick="logoutCloudAccount()" class="mt-2 w-full py-1 text-sm text-gray-500 transition hover:text-red-400">登出</button>`;
                 return;
             }
 
@@ -1849,7 +1860,7 @@
             if (passwordInput?.value) sessionStorage.setItem('subscription_sync_password', passwordInput.value);
         }
 
-        function saveAccountProfile() {
+        async function saveAccountProfile() {
             handleAccountProfileInput();
             const name = String(document.getElementById('subscription-account-name')?.value || '').trim();
             const email = getSubscriptionSyncEmail();
@@ -1866,11 +1877,27 @@
                 showAppAlert('備份密碼至少需要 10 個字元。', '尚未完成帳戶');
                 return;
             }
+            if (!isCloudAuthenticated()) {
+                showAppAlert('請先登入或註冊雲端帳戶。', '尚未登入');
+                return;
+            }
+            sessionStorage.setItem('subscription_sync_password', password);
+            showAppLoading('正在以新的帳號資料加密並同步雲端備份，請稍後…');
+            try {
+                await requestSubscriptionCloud('sync', email, getSubscriptionCloudPayload(email));
+            } catch (error) {
+                console.error('帳戶資料同步失敗。', error);
+                closeAppLoading();
+                await showAppAlert('帳戶資料尚未儲存到雲端，請確認網路後再試。', '同步失敗');
+                return;
+            }
+            closeAppLoading();
             localStorage.setItem('subscription_account_name', name.slice(0, 60));
             localStorage.setItem('subscription_sync_email', email);
             localStorage.setItem('subscription_account_profile_ready', 'true');
             accountProfileEditing = false;
             renderAccountProfile();
+            await showAppAlert('帳戶資料與加密雲端備份已更新。', '儲存完成');
         }
 
         function handleAccountAvatarUpload(event) {
@@ -1948,14 +1975,25 @@
 
         function initStartupAccountFlow() {
             if (localStorage.getItem('subscription_cloud_login_completed') === 'true' || localStorage.getItem('subscription_cloud_login_dismissed') === 'true') return;
+            openStartupAccountModal('login');
+        }
+
+        function openStartupAccountModal(mode = 'login') {
             const email = String(localStorage.getItem('subscription_sync_email') || '').trim();
             const emailInput = document.getElementById('startup-account-email');
             if (emailInput) emailInput.value = email;
-            setStartupAccountMode('login');
+            document.getElementById('startup-account-password').value = '';
+            document.getElementById('startup-account-confirm-password').value = '';
+            setStartupAccountMode(mode);
             const modal = document.getElementById('modal-startup-account');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             requestAnimationFrame(() => emailInput?.focus());
+        }
+
+        function openCloudLoginFromSettings() {
+            localStorage.removeItem('subscription_cloud_login_dismissed');
+            openStartupAccountModal('login');
         }
 
         function setStartupAccountMode(mode) {
@@ -2017,6 +2055,15 @@
         function continueWithoutCloudAccount() {
             localStorage.setItem('subscription_cloud_login_dismissed', 'true');
             closeStartupAccountModal();
+        }
+
+        async function logoutCloudAccount() {
+            if (!await showAppConfirm('登出後，這台裝置不會保留備份密碼。雲端備份不會被刪除。', '確認登出')) return;
+            sessionStorage.removeItem('subscription_sync_password');
+            localStorage.removeItem('subscription_cloud_login_completed');
+            localStorage.setItem('subscription_cloud_login_dismissed', 'true');
+            accountProfileEditing = false;
+            renderAccountProfile();
         }
 
         async function submitStartupAccount(event) {
