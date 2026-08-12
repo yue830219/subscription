@@ -2662,12 +2662,24 @@
             const preference = getThemePreference();
             const theme = resolvedTheme(preference);
             const useLight = theme === 'light';
+            const themeColor = useLight ? '#f2f4f8' : '#0f0f12';
             document.documentElement.classList.toggle('theme-light', useLight);
             document.documentElement.classList.toggle('dark', !useLight);
-            const themeMeta = document.querySelector('meta[name="theme-color"]');
-            const statusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-            if (themeMeta) themeMeta.content = useLight ? '#f2f4f8' : '#0f0f12';
-            if (statusMeta) statusMeta.content = useLight ? 'default' : 'black-translucent';
+            document.documentElement.style.backgroundColor = themeColor;
+            document.documentElement.style.colorScheme = useLight ? 'light' : 'dark';
+            document.body.style.backgroundColor = themeColor;
+
+            const replaceSystemMeta = (name, content) => {
+                document.querySelectorAll(`meta[name="${name}"]`).forEach(meta => meta.remove());
+                const meta = document.createElement('meta');
+                meta.name = name;
+                meta.content = content;
+                document.head.appendChild(meta);
+            };
+            replaceSystemMeta('theme-color', themeColor);
+            replaceSystemMeta('apple-mobile-web-app-status-bar-style', useLight ? 'default' : 'black-translucent');
+            void document.documentElement.offsetHeight;
+            requestAnimationFrame(() => { document.documentElement.style.backgroundColor = themeColor; });
             const caption = document.getElementById('theme-preference-caption');
             if (caption) caption.textContent = preference === 'auto' ? `自動・目前${useLight ? '淺色' : '深色'}` : useLight ? '淺色' : '深色';
             renderThemePreferenceOptions();
