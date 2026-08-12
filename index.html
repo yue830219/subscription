@@ -82,21 +82,20 @@
             border-bottom-color: transparent !important;
             -webkit-backdrop-filter: none !important;
             backdrop-filter: none !important;
-            will-change: transform, opacity;
-            transition: transform 220ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease, visibility 0s linear 0s;
+            will-change: opacity;
+            transition: opacity 280ms ease, visibility 0s linear 0s;
         }
         .main-top-bar.is-hidden {
-            transform: translate3d(0, calc(-100% - env(safe-area-inset-top, 0px)), 0);
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            transition-delay: 0s, 0s, 220ms;
+            transition-delay: 0s, 280ms;
         }
         #ios-status-bar-shield {
             position: fixed;
             inset: 0 0 auto;
             z-index: 200;
-            height: 1rem;
+            height: 0.6rem;
             background: rgb(var(--theme-bg));
             pointer-events: none;
         }
@@ -2567,7 +2566,7 @@
             });
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 elements.forEach(element => {
-                    element.style.transition = 'transform 240ms cubic-bezier(.22,.8,.2,1), opacity 180ms ease-out';
+                    element.style.transition = 'transform 360ms cubic-bezier(.22,.8,.2,1), opacity 300ms ease-out';
                     element.style.transform = 'translate3d(0, 0, 0)';
                     element.style.opacity = '1';
                 });
@@ -2576,7 +2575,7 @@
                     element.style.transform = '';
                     element.style.opacity = '';
                     element.style.willChange = '';
-                }), 250);
+                }), 370);
             }));
         }
 
@@ -2600,11 +2599,11 @@
             }
             elements.forEach(element => {
                 element.style.willChange = 'transform, opacity';
-                element.style.transition = 'transform 220ms cubic-bezier(.4,0,.8,.2), opacity 170ms ease-in';
+                element.style.transition = 'transform 340ms cubic-bezier(.4,0,.8,.2), opacity 300ms ease-in';
                 element.style.transform = 'translate3d(42px, 0, 0)';
                 element.style.opacity = '0';
             });
-            window.setTimeout(finish, 220);
+            window.setTimeout(finish, 350);
         }
 
         function animateBottomSheetIn(modal) {
@@ -2615,9 +2614,9 @@
             panel.style.transform = 'translate3d(0, 48px, 0)';
             panel.style.transition = 'none';
             requestAnimationFrame(() => requestAnimationFrame(() => {
-                modal.style.transition = 'opacity 180ms ease-out';
+                modal.style.transition = 'opacity 300ms ease-out';
                 modal.style.opacity = '1';
-                panel.style.transition = 'transform 260ms cubic-bezier(.22,.8,.2,1)';
+                panel.style.transition = 'transform 380ms cubic-bezier(.22,.8,.2,1)';
                 panel.style.transform = 'translate3d(0, 0, 0)';
             }));
         }
@@ -2637,11 +2636,11 @@
                 finish();
                 return;
             }
-            modal.style.transition = 'opacity 170ms ease-in';
+            modal.style.transition = 'opacity 300ms ease-in';
             modal.style.opacity = '0';
-            panel.style.transition = 'transform 220ms cubic-bezier(.4,0,.8,.2)';
+            panel.style.transition = 'transform 340ms cubic-bezier(.4,0,.8,.2)';
             panel.style.transform = 'translate3d(0, 42px, 0)';
-            window.setTimeout(finish, 220);
+            window.setTimeout(finish, 350);
         }
 
         function switchView(view) {
@@ -4060,16 +4059,16 @@
                 const { elements, backgroundElements, topChromeElements } = startPoint;
                 startPoint = null;
                 updateSurfaces(elements, {
-                    transition: 'transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease',
+                    transition: 'transform 300ms cubic-bezier(.2,.8,.2,1), opacity 300ms ease',
                     transform: 'translate3d(0, 0, 0)',
                     opacity: '1'
                 });
                 updateSurfaces(topChromeElements, {
-                    transition: 'opacity 180ms ease',
+                    transition: 'opacity 300ms ease',
                     opacity: '1'
                 });
                 updateSurfaces(backgroundElements, {
-                    transition: 'transform 180ms cubic-bezier(.2,.8,.2,1)',
+                    transition: 'transform 300ms cubic-bezier(.2,.8,.2,1)',
                     transform: 'translate3d(-18px, 0, 0)'
                 });
                 window.clearTimeout(resetTimer);
@@ -4077,7 +4076,7 @@
                     resetSurfaces(elements);
                     resetSurfaces(backgroundElements);
                     resetSurfaces(topChromeElements);
-                }, 190);
+                }, 310);
             };
 
             document.addEventListener('touchstart', event => {
@@ -4136,36 +4135,36 @@
                 startPoint = null;
                 if (axis !== 'horizontal' || deltaX < 70 || Math.abs(deltaX) <= Math.abs(deltaY)) {
                     updateSurfaces(elements, {
-                        transition: 'transform 180ms cubic-bezier(.2,.8,.2,1)',
+                        transition: 'transform 300ms cubic-bezier(.2,.8,.2,1), opacity 300ms ease',
                         transform: 'translate3d(0, 0, 0)',
                         opacity: '1'
                     });
                     updateSurfaces(topChromeElements, {
-                        transition: 'opacity 180ms ease',
+                        transition: 'opacity 300ms ease',
                         opacity: '1'
                     });
                     updateSurfaces(backgroundElements, {
-                        transition: 'transform 180ms cubic-bezier(.2,.8,.2,1)',
+                        transition: 'transform 300ms cubic-bezier(.2,.8,.2,1)',
                         transform: 'translate3d(-18px, 0, 0)'
                     });
                     resetTimer = window.setTimeout(() => {
                         resetSurfaces(elements);
                         resetSurfaces(backgroundElements);
                         resetSurfaces(topChromeElements);
-                    }, 190);
+                    }, 310);
                     return;
                 }
                 updateSurfaces(elements, {
-                    transition: 'transform 210ms cubic-bezier(.2,.8,.2,1), opacity 210ms ease',
+                    transition: 'transform 340ms cubic-bezier(.2,.8,.2,1), opacity 340ms ease',
                     transform: `translate3d(${window.innerWidth * 0.25}px, 0, 0)`,
                     opacity: '0'
                 });
                 updateSurfaces(topChromeElements, {
-                    transition: 'opacity 170ms ease',
+                    transition: 'opacity 300ms ease',
                     opacity: '0'
                 });
                 updateSurfaces(backgroundElements, {
-                    transition: 'transform 210ms cubic-bezier(.2,.8,.2,1)',
+                    transition: 'transform 340ms cubic-bezier(.2,.8,.2,1)',
                     transform: 'translate3d(0, 0, 0)'
                 });
                 resetTimer = window.setTimeout(() => {
@@ -4176,7 +4175,7 @@
                     resetSurfaces(elements);
                     resetSurfaces(backgroundElements);
                     resetSurfaces(topChromeElements);
-                }, 210);
+                }, 350);
             }, { passive: true, capture: true });
             document.addEventListener('touchcancel', cancelEdgeSwipe, { passive: true, capture: true });
         }
