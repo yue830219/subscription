@@ -1877,7 +1877,7 @@
             }
 
             const avatar = safeImageSrc(profile.avatar);
-            const rememberedPassword = String(sessionStorage.getItem('subscription_sync_password') || '');
+            const rememberedPassword = getRememberedSubscriptionSyncPassword();
             container.innerHTML = `
                 <div class="account-profile-card rounded-[2rem] p-4 flex items-center gap-4">
                     <div class="flex w-20 shrink-0 flex-col items-center gap-3">
@@ -1902,7 +1902,7 @@
         function openAccountProfileEditor() {
             accountProfileOriginalCredentials = {
                 email: String(localStorage.getItem('subscription_sync_email') || '').trim().toLowerCase(),
-                password: String(sessionStorage.getItem('subscription_sync_password') || ''),
+                password: getRememberedSubscriptionSyncPassword(),
                 name: String(localStorage.getItem('subscription_account_name') || '').trim(),
                 avatar: safeImageSrc(localStorage.getItem('subscription_account_avatar') || '')
             };
@@ -1921,7 +1921,7 @@
             if (emailIsValid) localStorage.setItem('subscription_sync_email', getSubscriptionSyncEmail());
 
             const passwordInput = document.getElementById('subscription-sync-password');
-            if (passwordInput?.value) sessionStorage.setItem('subscription_sync_password', passwordInput.value);
+            if (passwordInput?.value) rememberSubscriptionSyncPassword(passwordInput.value);
         }
 
         async function saveAccountProfile() {
@@ -1974,7 +1974,7 @@
                 else localStorage.removeItem('subscription_account_name');
                 if (accountProfileOriginalCredentials?.avatar) localStorage.setItem('subscription_account_avatar', accountProfileOriginalCredentials.avatar);
                 else localStorage.removeItem('subscription_account_avatar');
-                sessionStorage.setItem('subscription_sync_password', originalPassword);
+                rememberSubscriptionSyncPassword(originalPassword);
                 renderAccountProfile(true);
                 await showAppAlert('帳戶資料尚未更新到雲端，請確認原帳號、原密碼與網路後再試。', '同步失敗');
                 return;
@@ -1982,7 +1982,7 @@
             closeAppLoading();
             localStorage.setItem('subscription_account_name', name.slice(0, 60));
             localStorage.setItem('subscription_sync_email', email);
-            sessionStorage.setItem('subscription_sync_password', password);
+            rememberSubscriptionSyncPassword(password);
             localStorage.setItem('subscription_account_profile_ready', 'true');
             accountProfileOriginalCredentials = { email, password };
             accountProfileEditing = false;
@@ -2034,8 +2034,28 @@
             localStorage.setItem('subscription_sync_email', getSubscriptionSyncEmail());
         }
 
+        function getRememberedSubscriptionSyncPassword() {
+            const persistentPassword = String(localStorage.getItem('subscription_sync_password') || '');
+            if (persistentPassword) return persistentPassword;
+            const previousSessionPassword = String(sessionStorage.getItem('subscription_sync_password') || '');
+            if (previousSessionPassword) rememberSubscriptionSyncPassword(previousSessionPassword);
+            return previousSessionPassword;
+        }
+
+        function rememberSubscriptionSyncPassword(password) {
+            const value = String(password || '');
+            if (value) localStorage.setItem('subscription_sync_password', value);
+            else localStorage.removeItem('subscription_sync_password');
+            sessionStorage.removeItem('subscription_sync_password');
+        }
+
+        function forgetSubscriptionSyncPassword() {
+            localStorage.removeItem('subscription_sync_password');
+            sessionStorage.removeItem('subscription_sync_password');
+        }
+
         function getSubscriptionSyncPassword() {
-            return String(document.getElementById('subscription-sync-password')?.value || sessionStorage.getItem('subscription_sync_password') || '');
+            return String(document.getElementById('subscription-sync-password')?.value || document.getElementById('startup-account-password')?.value || getRememberedSubscriptionSyncPassword());
         }
 
         function ensureSubscriptionCloudSyncReady() {
@@ -2050,7 +2070,7 @@
                 return '';
             }
             if (password.length < 10) {
-                showAppAlert('請設定至少 10 個字元的備份密碼。這個密碼只在本機用來加密資料，不會上傳或儲存。', '備份密碼不足');
+                showAppAlert('請設定至少 10 個字元的備份密碼。密碼只會儲存在這台裝置並用於本機加密，不會上傳。', '備份密碼不足');
                 return '';
             }
             if (!navigator.onLine) {
@@ -2130,7 +2150,7 @@
 
         function saveStartupAccountCredentials(email, password) {
             localStorage.setItem('subscription_sync_email', email);
-            sessionStorage.setItem('subscription_sync_password', password);
+            rememberSubscriptionSyncPassword(password);
             localStorage.setItem('subscription_cloud_login_completed', 'true');
             localStorage.removeItem('subscription_cloud_login_dismissed');
             renderAccountProfile();
@@ -2149,7 +2169,7 @@
 
         async function logoutCloudAccount() {
             if (!await showAppConfirm('登出後，這台裝置不會保留備份密碼。雲端備份不會被刪除。', '確認登出')) return;
-            sessionStorage.removeItem('subscription_sync_password');
+            forgetSubscriptionSyncPassword();
             localStorage.removeItem('subscription_cloud_login_completed');
             localStorage.setItem('subscription_cloud_login_dismissed', 'true');
             accountProfileEditing = false;
@@ -2181,7 +2201,7 @@
 
             setStartupAccountBusy(true);
             setStartupAccountMessage(registering ? '正在建立加密備份…' : '正在登入並檢查備份…');
-            sessionStorage.setItem('subscription_sync_password', password);
+            rememberSubscriptionSyncPassword(password);
             try {
                 const remote = await requestSubscriptionCloud('load', email);
                 if (registering) {
