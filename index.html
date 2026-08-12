@@ -851,11 +851,12 @@
         </main>
     </section>
 
-    <div id="modal-manager" onclick="closeModalOnBackdrop(event, 'modal-manager')" class="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-end justify-center hidden z-50 p-0">
-        <div class="bg-darkCard w-full max-w-md rounded-t-3xl max-h-[90dvh] overflow-y-auto p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] space-y-4 border border-darkBorder shadow-2xl">
-            <div class="flex justify-between items-center border-b border-darkBorder pb-3">
+    <section id="modal-manager" class="fixed inset-0 z-[60] hidden flex-col bg-[#0f0f12] overflow-y-auto no-scrollbar pb-10">
+        <div class="mx-auto w-full max-w-md space-y-4 p-4">
+            <div class="sticky top-0 z-10 -mx-4 -mt-4 flex items-center justify-between border-b border-darkBorder/60 bg-[#0f0f12]/95 px-4 py-4 backdrop-blur-md">
+                <button type="button" onclick="closeModal('modal-manager')" class="w-10 text-left text-accentBlue" aria-label="返回設定"><i class="fa-solid fa-chevron-left text-lg"></i></button>
                 <h3 id="manager-title" class="text-lg font-bold">管理項目</h3>
-                <button onclick="closeModal('modal-manager')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <span class="w-10"></span>
             </div>
 
             <div class="flex space-x-2">
@@ -863,11 +864,11 @@
                 <button onclick="addManagerItem()" class="px-4 py-2 bg-accentBlue text-white rounded-xl text-sm font-medium">新增</button>
             </div>
 
-            <div id="manager-items-list" class="space-y-3 max-h-[60vh] overflow-y-auto no-scrollbar">
+            <div id="manager-items-list" class="space-y-3">
                 <!-- JS 動態生成項目 -->
             </div>
         </div>
-    </div>
+    </section>
 
     <!-- 付款方式／類別圖示選擇器 -->
     <div id="modal-manager-icon-picker" onclick="closeModalOnBackdrop(event, 'modal-manager-icon-picker')" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-[70] p-4">
@@ -3397,7 +3398,13 @@
 
             const getBackAction = () => {
                 const getVisible = id => document.getElementById(id);
-                const createBackAction = (element, action, elements = [element]) => ({ element, elements, action });
+                const createBackAction = (element, action, elements = [element], backgroundElements = []) => ({ element, elements, backgroundElements, action });
+                const getBasePageElements = () => [
+                    document.getElementById('app-header'),
+                    ['view-list-container', 'view-calendar-container', 'view-analysis-container']
+                        .map(getVisible).find(view => !view.classList.contains('hidden')),
+                    document.querySelector('button[onclick="openAddModal()"]')
+                ].filter(Boolean);
                 const themeSettings = getVisible('modal-theme-settings');
                 const cardLayout = getVisible('modal-card-layout');
                 const subModal = getVisible('modal-sub');
@@ -3405,13 +3412,33 @@
                 const iconPicker = getVisible('modal-manager-icon-picker');
                 const manager = getVisible('modal-manager');
                 const settings = getVisible('modal-settings');
-                if (!themeSettings.classList.contains('hidden')) return createBackAction(themeSettings, closeThemeSettingsModal);
-                if (!cardLayout.classList.contains('hidden')) return createBackAction(cardLayout, closeCardLayoutModal);
-                if (!subModal.classList.contains('hidden')) return createBackAction(subModal, () => closeModal('modal-sub'));
-                if (!detail.classList.contains('hidden')) return createBackAction(detail, closeSubscriptionDetail);
-                if (!iconPicker.classList.contains('hidden')) return createBackAction(iconPicker, closeManagerIconPicker);
-                if (!manager.classList.contains('hidden')) return createBackAction(manager, () => closeModal('modal-manager'));
-                if (!settings.classList.contains('hidden')) return createBackAction(settings, () => closeModal('modal-settings'));
+                const colorPicker = getVisible('modal-color-picker');
+                const iconSource = getVisible('modal-icon-source');
+                const subscriptionIconPicker = getVisible('modal-icon-picker');
+                const datePicker = getVisible('modal-date-picker');
+                const calendarDay = getVisible('modal-calendar-day');
+                const visibleSurface = surface => surface && !surface.classList.contains('hidden') ? [surface] : [];
+                if (!themeSettings.classList.contains('hidden')) return createBackAction(themeSettings, closeThemeSettingsModal, [themeSettings], visibleSurface(settings));
+                if (!cardLayout.classList.contains('hidden')) return createBackAction(cardLayout, closeCardLayoutModal, [cardLayout], visibleSurface(settings));
+                if (!iconPicker.classList.contains('hidden')) {
+                    const previousSurface = !manager.classList.contains('hidden') ? [manager] : visibleSurface(settings);
+                    return createBackAction(iconPicker, closeManagerIconPicker, [iconPicker], previousSurface);
+                }
+                if (!manager.classList.contains('hidden')) {
+                    const previousSurface = !subModal.classList.contains('hidden') ? [subModal] : visibleSurface(settings);
+                    return createBackAction(manager, () => closeModal('modal-manager'), [manager], previousSurface);
+                }
+                if (!colorPicker.classList.contains('hidden')) return createBackAction(colorPicker, closeColorPickerModal, [colorPicker], visibleSurface(subModal));
+                if (!iconSource.classList.contains('hidden')) return createBackAction(iconSource, closeIconSourceModal, [iconSource], visibleSurface(subModal));
+                if (!subscriptionIconPicker.classList.contains('hidden')) return createBackAction(subscriptionIconPicker, closeIconPickerModal, [subscriptionIconPicker], visibleSurface(subModal));
+                if (!datePicker.classList.contains('hidden')) return createBackAction(datePicker, closeDatePickerModal, [datePicker], visibleSurface(subModal));
+                if (!subModal.classList.contains('hidden')) {
+                    const previousSurface = !detail.classList.contains('hidden') ? [detail] : getBasePageElements();
+                    return createBackAction(subModal, () => closeModal('modal-sub'), [subModal], previousSurface);
+                }
+                if (!detail.classList.contains('hidden')) return createBackAction(detail, closeSubscriptionDetail, [detail], getBasePageElements());
+                if (!calendarDay.classList.contains('hidden')) return createBackAction(calendarDay, () => closeCalendarDayModal(), [calendarDay], getBasePageElements());
+                if (!settings.classList.contains('hidden')) return createBackAction(settings, () => closeModal('modal-settings'), [settings], getBasePageElements());
                 return null;
             };
 
@@ -3425,14 +3452,22 @@
 
             const cancelEdgeSwipe = () => {
                 if (!startPoint) return;
-                const { elements } = startPoint;
+                const { elements, backgroundElements } = startPoint;
                 startPoint = null;
                 updateSurfaces(elements, {
+                    transition: 'transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease',
+                    transform: 'translate3d(0, 0, 0)',
+                    opacity: '1'
+                });
+                updateSurfaces(backgroundElements, {
                     transition: 'transform 180ms cubic-bezier(.2,.8,.2,1)',
-                    transform: 'translate3d(0, 0, 0)'
+                    transform: 'translate3d(-18px, 0, 0)'
                 });
                 window.clearTimeout(resetTimer);
-                resetTimer = window.setTimeout(() => resetSurfaces(elements), 190);
+                resetTimer = window.setTimeout(() => {
+                    resetSurfaces(elements);
+                    resetSurfaces(backgroundElements);
+                }, 190);
             };
 
             document.addEventListener('touchstart', event => {
@@ -3441,7 +3476,9 @@
                 const touch = event.touches[0];
                 window.clearTimeout(resetTimer);
                 resetSurfaces(back.elements);
+                resetSurfaces(back.backgroundElements);
                 updateSurfaces(back.elements, { willChange: 'transform, opacity' });
+                updateSurfaces(back.backgroundElements, { transition: 'none', transform: 'translate3d(-18px, 0, 0)', willChange: 'transform' });
                 startPoint = { x: touch.clientX, y: touch.clientY, axis: null, ...back };
             }, { passive: true, capture: true });
 
@@ -3457,11 +3494,16 @@
                 if (startPoint.axis !== 'horizontal') return;
                 // 返回手勢成立後接管觸控，避免頁面同時上下捲動。
                 event.preventDefault();
-                if (deltaX <= 0) return;
+                const horizontalOffset = Math.max(0, Math.min(deltaX, window.innerWidth));
+                const progress = horizontalOffset / window.innerWidth;
                 updateSurfaces(startPoint.elements, {
                     transition: 'none',
-                    transform: `translate3d(${Math.min(deltaX, window.innerWidth * 0.45)}px, 0, 0)`,
-                    opacity: '1'
+                    transform: `translate3d(${horizontalOffset}px, 0, 0)`,
+                    opacity: `${1 - progress * 0.38}`
+                });
+                updateSurfaces(startPoint.backgroundElements, {
+                    transition: 'none',
+                    transform: `translate3d(${-18 * (1 - progress)}px, 0, 0)`
                 });
             }, { passive: false, capture: true });
 
@@ -3470,7 +3512,7 @@
                 const touch = event.changedTouches[0];
                 const deltaX = touch.clientX - startPoint.x;
                 const deltaY = touch.clientY - startPoint.y;
-                const { action, elements, element, axis } = startPoint;
+                const { action, elements, backgroundElements, element, axis } = startPoint;
                 startPoint = null;
                 if (axis !== 'horizontal' || deltaX < 70 || Math.abs(deltaX) <= Math.abs(deltaY)) {
                     updateSurfaces(elements, {
@@ -3478,16 +3520,28 @@
                         transform: 'translate3d(0, 0, 0)',
                         opacity: '1'
                     });
-                    resetTimer = window.setTimeout(() => resetSurfaces(elements), 190);
+                    updateSurfaces(backgroundElements, {
+                        transition: 'transform 180ms cubic-bezier(.2,.8,.2,1)',
+                        transform: 'translate3d(-18px, 0, 0)'
+                    });
+                    resetTimer = window.setTimeout(() => {
+                        resetSurfaces(elements);
+                        resetSurfaces(backgroundElements);
+                    }, 190);
                     return;
                 }
                 updateSurfaces(elements, {
                     transition: 'transform 210ms cubic-bezier(.2,.8,.2,1)',
                     transform: `translate3d(${window.innerWidth}px, 0, 0)`,
-                    opacity: '1'
+                    opacity: '0.62'
+                });
+                updateSurfaces(backgroundElements, {
+                    transition: 'transform 210ms cubic-bezier(.2,.8,.2,1)',
+                    transform: 'translate3d(0, 0, 0)'
                 });
                 resetTimer = window.setTimeout(() => {
                     resetSurfaces(elements);
+                    resetSurfaces(backgroundElements);
                     element.dataset.skipCloseAnimation = 'true';
                     action();
                 }, 210);
@@ -3974,8 +4028,6 @@
                     openSubscriptionDetail(returnDetailId, false);
                 }
                 closeOverlaySmooth(modal);
-            } else if (id === 'modal-manager') {
-                closeBottomSheetSmooth(modal);
             } else {
                 closeOverlaySmooth(modal);
             }
@@ -4024,7 +4076,9 @@
             renderManagerList();
             const modal = document.getElementById('modal-manager');
             modal.classList.remove('hidden');
-            animateBottomSheetIn(modal);
+            modal.classList.add('flex');
+            modal.scrollTop = 0;
+            animateOverlayIn(modal);
             if (pendingSubscriptionManagerType === type) {
                 requestAnimationFrame(() => document.getElementById('manager-new-input').focus());
             }
