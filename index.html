@@ -2058,15 +2058,22 @@
 
         function animateOverlayIn(surface, elements = [surface]) {
             if (!surface) return;
+            const fullScreenSurfaceIds = new Set([
+                'view-subscription-detail', 'modal-sub', 'modal-settings',
+                'modal-theme-settings', 'modal-card-layout', 'modal-manager'
+            ]);
+            const keepOpaque = elements.length === 1 && elements[0] === surface && fullScreenSurfaceIds.has(surface.id);
             elements.forEach(element => {
-                element.style.willChange = 'transform, opacity';
+                element.style.willChange = keepOpaque ? 'transform' : 'transform, opacity';
                 element.style.transition = 'none';
                 element.style.transform = 'translate3d(28px, 0, 0)';
-                element.style.opacity = '0';
+                element.style.opacity = keepOpaque ? '1' : '0';
             });
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 elements.forEach(element => {
-                    element.style.transition = 'transform 240ms cubic-bezier(.22,.8,.2,1), opacity 180ms ease-out';
+                    element.style.transition = keepOpaque
+                        ? 'transform 240ms cubic-bezier(.22,.8,.2,1)'
+                        : 'transform 240ms cubic-bezier(.22,.8,.2,1), opacity 180ms ease-out';
                     element.style.transform = 'translate3d(0, 0, 0)';
                     element.style.opacity = '1';
                 });
