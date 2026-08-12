@@ -1130,7 +1130,7 @@
         }
 
         // TEMP VERSION BADGE: increment after every user-visible update; remove when requested.
-        const APP_VERSION = 'v1.0.5';
+        const APP_VERSION = 'v1.0.6';
 
         const DEFAULT_CARD_LAYOUT = {
             coloredCard: true,
@@ -3230,6 +3230,8 @@
             pendingThemePreference = value;
             renderThemePreferenceOptions();
             clearThemePreviewStatusShield();
+            const currentTheme = document.documentElement.classList.contains('theme-light') ? 'light' : 'dark';
+            if (resolvedTheme(value) === currentTheme) return;
             const shield = document.getElementById('theme-preview-status-shield');
             if (!shield || typeof shield.animate !== 'function') {
                 applyThemePreference(value);
