@@ -4036,17 +4036,27 @@
                 elements.forEach(element => Object.assign(element.style, styles));
             };
 
+            const getTopChromeElements = elements => elements.map(surface => {
+                const topChrome = surface.querySelector(':scope > header, :scope > .sticky, :scope > div > .sticky, :scope > div > :first-child');
+                if (!topChrome || topChrome.getBoundingClientRect().top > 80) return null;
+                return topChrome;
+            }).filter(Boolean);
+
             const resetSurfaces = elements => {
                 updateSurfaces(elements, { transition: '', transform: '', opacity: '', willChange: '' });
             };
 
             const cancelEdgeSwipe = () => {
                 if (!startPoint) return;
-                const { elements, backgroundElements } = startPoint;
+                const { elements, backgroundElements, topChromeElements } = startPoint;
                 startPoint = null;
                 updateSurfaces(elements, {
                     transition: 'transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease',
                     transform: 'translate3d(0, 0, 0)',
+                    opacity: '1'
+                });
+                updateSurfaces(topChromeElements, {
+                    transition: 'opacity 180ms ease',
                     opacity: '1'
                 });
                 updateSurfaces(backgroundElements, {
@@ -4057,6 +4067,7 @@
                 resetTimer = window.setTimeout(() => {
                     resetSurfaces(elements);
                     resetSurfaces(backgroundElements);
+                    resetSurfaces(topChromeElements);
                 }, 190);
             };
 
@@ -4067,9 +4078,12 @@
                 window.clearTimeout(resetTimer);
                 resetSurfaces(back.elements);
                 resetSurfaces(back.backgroundElements);
+                const topChromeElements = getTopChromeElements(back.elements);
+                resetSurfaces(topChromeElements);
                 updateSurfaces(back.elements, { willChange: 'transform, opacity' });
+                updateSurfaces(topChromeElements, { willChange: 'opacity' });
                 updateSurfaces(back.backgroundElements, { transition: 'none', transform: 'translate3d(-18px, 0, 0)', willChange: 'transform' });
-                startPoint = { x: touch.clientX, y: touch.clientY, axis: null, ...back };
+                startPoint = { x: touch.clientX, y: touch.clientY, axis: null, topChromeElements, ...back };
             }, { passive: true, capture: true });
 
             document.addEventListener('touchmove', event => {
@@ -4086,10 +4100,17 @@
                 event.preventDefault();
                 const horizontalOffset = Math.max(0, Math.min(deltaX, window.innerWidth));
                 const progress = horizontalOffset / window.innerWidth;
+                const travelLimit = window.innerWidth * 0.1;
+                const surfaceOffset = Math.min(horizontalOffset, travelLimit);
+                const fadeProgress = Math.max(0, Math.min(1, (progress - 0.1) / 0.9));
                 updateSurfaces(startPoint.elements, {
                     transition: 'none',
-                    transform: `translate3d(${horizontalOffset}px, 0, 0)`,
-                    opacity: `${1 - progress * 0.38}`
+                    transform: `translate3d(${surfaceOffset}px, 0, 0)`,
+                    opacity: `${1 - fadeProgress}`
+                });
+                updateSurfaces(startPoint.topChromeElements, {
+                    transition: 'none',
+                    opacity: `${1 - fadeProgress * 0.35}`
                 });
                 updateSurfaces(startPoint.backgroundElements, {
                     transition: 'none',
@@ -4102,12 +4123,16 @@
                 const touch = event.changedTouches[0];
                 const deltaX = touch.clientX - startPoint.x;
                 const deltaY = touch.clientY - startPoint.y;
-                const { action, elements, backgroundElements, element, axis } = startPoint;
+                const { action, elements, backgroundElements, topChromeElements, element, axis } = startPoint;
                 startPoint = null;
                 if (axis !== 'horizontal' || deltaX < 70 || Math.abs(deltaX) <= Math.abs(deltaY)) {
                     updateSurfaces(elements, {
                         transition: 'transform 180ms cubic-bezier(.2,.8,.2,1)',
                         transform: 'translate3d(0, 0, 0)',
+                        opacity: '1'
+                    });
+                    updateSurfaces(topChromeElements, {
+                        transition: 'opacity 180ms ease',
                         opacity: '1'
                     });
                     updateSurfaces(backgroundElements, {
@@ -4117,13 +4142,18 @@
                     resetTimer = window.setTimeout(() => {
                         resetSurfaces(elements);
                         resetSurfaces(backgroundElements);
+                        resetSurfaces(topChromeElements);
                     }, 190);
                     return;
                 }
                 updateSurfaces(elements, {
-                    transition: 'transform 210ms cubic-bezier(.2,.8,.2,1)',
-                    transform: `translate3d(${window.innerWidth}px, 0, 0)`,
-                    opacity: '0.62'
+                    transition: 'transform 210ms cubic-bezier(.2,.8,.2,1), opacity 210ms ease',
+                    transform: `translate3d(${window.innerWidth * 0.1}px, 0, 0)`,
+                    opacity: '0'
+                });
+                updateSurfaces(topChromeElements, {
+                    transition: 'opacity 170ms ease',
+                    opacity: '0'
                 });
                 updateSurfaces(backgroundElements, {
                     transition: 'transform 210ms cubic-bezier(.2,.8,.2,1)',
@@ -4136,6 +4166,7 @@
                     // 最後一幀先跳回原始置中規則、下一幀才露出，造成回彈感。
                     resetSurfaces(elements);
                     resetSurfaces(backgroundElements);
+                    resetSurfaces(topChromeElements);
                 }, 210);
             }, { passive: true, capture: true });
             document.addEventListener('touchcancel', cancelEdgeSwipe, { passive: true, capture: true });
