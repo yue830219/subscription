@@ -4035,7 +4035,7 @@
                     return createBackAction(subModal, () => closeModal('modal-sub'), [subModal], previousSurface);
                 }
                 if (!detail.classList.contains('hidden')) return createBackAction(detail, closeSubscriptionDetail, [detail], getBasePageElements());
-                if (!calendarDay.classList.contains('hidden')) return createBackAction(calendarDay, () => closeCalendarDayModal(), [calendarDay], getBasePageElements());
+                if (!calendarDay.classList.contains('hidden')) return null;
                 if (!settings.classList.contains('hidden')) return createBackAction(settings, () => closeModal('modal-settings'), [settings], getBasePageElements());
                 return null;
             };
@@ -4110,7 +4110,7 @@
                 const progress = horizontalOffset / window.innerWidth;
                 const travelLimit = window.innerWidth * 0.25;
                 const surfaceOffset = Math.min(horizontalOffset, travelLimit);
-                const fadeProgress = Math.max(0, Math.min(1, progress / 0.52));
+                const fadeProgress = Math.max(0, Math.min(1, progress / 0.8));
                 updateSurfaces(startPoint.elements, {
                     transition: 'none',
                     transform: `translate3d(${surfaceOffset}px, 0, 0)`,
