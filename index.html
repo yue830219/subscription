@@ -3019,7 +3019,10 @@
 
         function closeSubscriptionDetail() {
             const detailView = document.getElementById('view-subscription-detail');
-            closeOverlaySmooth(detailView);
+            closeOverlaySmooth(detailView, [detailView], () => {
+                window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+                document.getElementById('app-header')?.classList.remove('is-hidden');
+            });
             selectedSubscriptionId = null;
         }
 
