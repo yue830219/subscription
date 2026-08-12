@@ -151,6 +151,10 @@
         }
         .account-profile-card .account-profile-name { color: #fff; }
         .account-profile-card .account-profile-email { color: #b8b4bf; }
+        .account-profile-input {
+            border-bottom: 1px solid rgba(255, 255, 255, .24) !important;
+        }
+        .account-profile-input:focus { border-bottom-color: rgba(255, 255, 255, .48) !important; }
         html.theme-light .account-profile-card {
             border-color: #e2e8f0;
             background: #ffffff;
@@ -159,6 +163,8 @@
         html.theme-light .account-profile-avatar { background: #e5e9f0; color: #64748b; }
         html.theme-light .account-profile-card .account-profile-name { color: #1f1b22 !important; }
         html.theme-light .account-profile-card .account-profile-email { color: #716b75 !important; }
+        html.theme-light .account-profile-input { border-bottom-color: rgba(15, 23, 42, .16) !important; }
+        html.theme-light .account-profile-input:focus { border-bottom-color: rgba(15, 23, 42, .30) !important; }
         body, body * {
             user-select: none;
             -webkit-user-select: none;
@@ -1785,8 +1791,8 @@
 
             const avatar = safeImageSrc(profile.avatar);
             container.innerHTML = `
-                <form autocomplete="on" onsubmit="saveAccountProfile(event)" class="account-profile-card rounded-[2rem] p-4 flex items-start gap-4">
-                    <label class="relative mt-1 shrink-0 cursor-pointer" aria-label="上傳帳戶大頭照">
+                <form autocomplete="on" onsubmit="saveAccountProfile(event)" class="account-profile-card rounded-[2rem] p-4 flex items-center gap-4">
+                    <label class="relative shrink-0 cursor-pointer" aria-label="上傳帳戶大頭照">
                         ${avatar
                             ? `<img id="account-avatar-preview" src="${avatar}" alt="帳戶大頭照" class="w-20 h-20 rounded-full object-cover">`
                             : `<span id="account-avatar-preview" class="account-profile-avatar w-20 h-20 rounded-full flex items-center justify-center text-2xl"><i class="fa-solid fa-user"></i></span>`}
@@ -1794,9 +1800,9 @@
                         <input id="account-avatar-upload" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" onchange="handleAccountAvatarUpload(event)">
                     </label>
                     <div class="min-w-0 flex-1 space-y-2">
-                        <input id="subscription-account-name" type="text" maxlength="60" autocomplete="name" placeholder="名稱" value="${escapeHTML(profile.name)}" oninput="handleAccountProfileInput()" class="w-full border-0 border-b border-darkBorder bg-transparent px-0 py-1.5 text-base font-bold text-white outline-none transition placeholder:text-gray-500 focus:border-accentBlue">
-                        <input id="subscription-sync-email" name="username" type="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="E-mail" value="${escapeHTML(email)}" oninput="handleAccountProfileInput()" onblur="saveSubscriptionSyncEmailIfValid()" class="w-full border-0 border-b border-darkBorder bg-transparent px-0 py-1.5 text-base text-white outline-none transition placeholder:text-gray-500 focus:border-accentBlue">
-                        <input id="subscription-sync-password" name="current-password" type="password" autocomplete="current-password" spellcheck="false" placeholder="備份密碼（至少 10 個字元）" oninput="handleAccountProfileInput()" class="w-full border-0 border-b border-darkBorder bg-transparent px-0 py-1.5 text-base text-white outline-none transition placeholder:text-gray-500 focus:border-accentBlue">
+                        <input id="subscription-account-name" name="name" type="text" maxlength="60" autocomplete="name" autocapitalize="words" placeholder="名稱" value="${escapeHTML(profile.name)}" oninput="handleAccountProfileInput()" class="account-profile-input w-full border-0 bg-transparent px-0 py-1.5 text-base font-bold text-white outline-none transition placeholder:text-gray-500">
+                        <input id="subscription-sync-email" name="username" type="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="E-mail" value="${escapeHTML(email)}" oninput="handleAccountProfileInput()" onblur="saveSubscriptionSyncEmailIfValid()" class="account-profile-input w-full border-0 bg-transparent px-0 py-1.5 text-base text-white outline-none transition placeholder:text-gray-500">
+                        <input id="subscription-sync-password" name="current-password" type="password" autocomplete="current-password" spellcheck="false" placeholder="備份密碼（至少 10 個字元）" oninput="handleAccountProfileInput()" class="account-profile-input w-full border-0 bg-transparent px-0 py-1.5 text-base text-white outline-none transition placeholder:text-gray-500">
                         <button type="submit" class="mt-2 w-full rounded-xl bg-accentBlue py-2.5 text-sm font-bold text-white transition active:scale-[0.98]">儲存帳戶</button>
                     </div>
                 </form>`;
@@ -1880,25 +1886,10 @@
 
         function validateSubscriptionSyncEmail() {
             const input = document.getElementById('subscription-sync-email');
-            const message = document.getElementById('subscription-sync-email-message');
             if (!input) return false;
             const email = String(input.value || '').trim();
-            if (!email) {
-                input.classList.remove('border-red-400', 'border-emerald-400');
-                input.classList.add('border-darkBorder');
-                if (message) message.textContent = '';
-                return false;
-            }
-            if (!isValidSubscriptionSyncEmail(email)) {
-                input.classList.remove('border-darkBorder', 'border-emerald-400');
-                input.classList.add('border-red-400');
-                if (message) message.textContent = '';
-                return false;
-            }
-            input.classList.remove('border-darkBorder', 'border-red-400');
-            input.classList.add('border-emerald-400');
-            if (message) message.textContent = '';
-            return true;
+            input.classList.remove('border-red-400', 'border-emerald-400', 'border-darkBorder');
+            return Boolean(email) && isValidSubscriptionSyncEmail(email);
         }
 
         function saveSubscriptionSyncEmailIfValid() {
