@@ -411,7 +411,7 @@
 
             <div class="bg-darkCard rounded-3xl p-5 flex justify-between items-center border border-darkBorder/50">
                 <span class="text-lg text-gray-400">狀態</span>
-                <span id="detail-status" class="text-lg font-bold text-green-400"><i class="fa-solid fa-circle-check mr-1"></i>啟用中</span>
+                <button type="button" id="detail-status-toggle" onclick="toggleSelectedSubscriptionStatus()" class="transition active:scale-95" aria-label="切換訂閱啟用狀態"><span id="detail-status" class="text-lg font-bold text-green-400"><i class="fa-solid fa-circle-check mr-1"></i>啟用中</span></button>
             </div>
 
             <div class="bg-darkCard rounded-3xl p-5 space-y-5 border border-darkBorder/50">
@@ -2460,7 +2460,7 @@
             return `${days} 天`;
         }
 
-        function openSubscriptionDetail(id) {
+        function openSubscriptionDetail(id, shouldAnimate = true) {
             const sub = subscriptions.find(item => item.id === id);
             if (!sub) return;
             selectedSubscriptionId = id;
@@ -2474,6 +2474,7 @@
             const isActive = sub.isActive !== false;
             detailStatus.className = `text-lg font-bold ${isActive ? 'text-green-400' : 'text-red-400'}`;
             detailStatus.innerHTML = `<i class="fa-solid ${isActive ? 'fa-circle-check' : 'fa-circle-xmark'} mr-1"></i>${isActive ? '啟用中' : '已停用'}`;
+            document.getElementById('detail-status-toggle').setAttribute('aria-label', isActive ? '停用此訂閱' : '啟用此訂閱');
             document.getElementById('detail-next-date').textContent = nextPayment ? formatDisplayDate(nextPaymentKey) : '無後續付款';
             document.getElementById('detail-period-amount').textContent = subscriptionAmountDetail(sub);
             document.getElementById('detail-days-until').textContent = nextPayment ? daysUntil(nextPaymentKey) : '—';
@@ -2500,7 +2501,7 @@
             const detailView = document.getElementById('view-subscription-detail');
             detailView.scrollTop = 0;
             requestAnimationFrame(() => { detailView.scrollTop = 0; });
-            animateOverlayIn(detailView, Array.from(detailView.children));
+            if (shouldAnimate) animateOverlayIn(detailView, Array.from(detailView.children));
         }
 
         function closeSubscriptionDetail() {
@@ -2512,7 +2513,6 @@
         function editSelectedSubscription() {
             if (!selectedSubscriptionId) return;
             const id = selectedSubscriptionId;
-            closeSubscriptionDetail();
             openEditModal(id, id);
         }
 
@@ -2520,7 +2520,6 @@
             const sub = subscriptions.find(item => item.id === selectedSubscriptionId);
             if (!sub) return;
             const returnDetailId = sub.id;
-            closeSubscriptionDetail();
             openAddModal(null, returnDetailId);
 
             document.getElementById('sub-name').value = sub.name || '';
@@ -3056,6 +3055,13 @@
             renderList();
             renderCalendar();
             renderAnalysis();
+            if (selectedSubscriptionId === id && !document.getElementById('view-subscription-detail').classList.contains('hidden')) {
+                openSubscriptionDetail(id, false);
+            }
+        }
+
+        function toggleSelectedSubscriptionStatus() {
+            if (selectedSubscriptionId) toggleSubscriptionStatus(selectedSubscriptionId);
         }
 
         function quickDeleteSubscription(id) {
@@ -3957,11 +3963,11 @@
             if (id === 'modal-sub') {
                 const returnDetailId = subscriptionModalReturnDetailId;
                 subscriptionModalReturnDetailId = null;
-                closeOverlaySmooth(modal, [modal], () => {
-                    if (returnDetailId && subscriptions.some(sub => sub.id === returnDetailId)) {
-                        openSubscriptionDetail(returnDetailId);
-                    }
-                });
+                if (returnDetailId && subscriptions.some(sub => sub.id === returnDetailId)) {
+                    // 保留狀態頁作為編輯／複製頁的固定底層，返回時只更新內容，不重新進場。
+                    openSubscriptionDetail(returnDetailId, false);
+                }
+                closeOverlaySmooth(modal);
             } else if (id === 'modal-manager') {
                 closeBottomSheetSmooth(modal);
             } else {
