@@ -451,7 +451,7 @@
     </main>
 
     <!-- 訂閱狀態詳情 -->
-    <section id="view-subscription-detail" class="fixed inset-0 z-50 isolate hidden flex-col overflow-y-auto no-scrollbar bg-darkBg pb-28" style="box-shadow:-16px 0 34px rgba(0,0,0,.3)">
+    <section id="view-subscription-detail" class="fixed inset-0 z-50 isolate hidden flex-col overflow-y-auto no-scrollbar bg-darkBg pb-28">
         <header class="p-4 flex items-center justify-between sticky top-0 bg-darkBg/90 backdrop-blur-md z-10 border-b border-darkBorder/30">
             <button type="button" onclick="closeSubscriptionDetail()" class="w-10 h-10 rounded-full bg-darkCard flex items-center justify-center text-gray-300 hover:text-white transition" aria-label="返回列表">
                 <i class="fa-solid fa-chevron-left text-lg"></i>
@@ -4100,9 +4100,9 @@
                 event.preventDefault();
                 const horizontalOffset = Math.max(0, Math.min(deltaX, window.innerWidth));
                 const progress = horizontalOffset / window.innerWidth;
-                const travelLimit = window.innerWidth * 0.1;
+                const travelLimit = window.innerWidth * 0.4;
                 const surfaceOffset = Math.min(horizontalOffset, travelLimit);
-                const fadeProgress = Math.max(0, Math.min(1, (progress - 0.1) / 0.9));
+                const fadeProgress = Math.max(0, Math.min(1, (progress - 0.4) / 0.6));
                 updateSurfaces(startPoint.elements, {
                     transition: 'none',
                     transform: `translate3d(${surfaceOffset}px, 0, 0)`,
@@ -4148,7 +4148,7 @@
                 }
                 updateSurfaces(elements, {
                     transition: 'transform 210ms cubic-bezier(.2,.8,.2,1), opacity 210ms ease',
-                    transform: `translate3d(${window.innerWidth * 0.1}px, 0, 0)`,
+                    transform: `translate3d(${window.innerWidth * 0.4}px, 0, 0)`,
                     opacity: '0'
                 });
                 updateSurfaces(topChromeElements, {
