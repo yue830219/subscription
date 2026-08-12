@@ -711,7 +711,7 @@
     </div>
 
     <!-- Modal 4: 設定選單 -->
-    <main id="modal-settings" class="hidden min-h-screen bg-[#0f0f12]">
+    <div id="modal-settings" onclick="closeModalOnBackdrop(event, 'modal-settings')" class="fixed inset-0 bg-[#0f0f12] flex flex-col hidden z-50 overflow-y-auto no-scrollbar">
         <div class="min-h-full w-full p-6 space-y-5">
             <div class="flex justify-between items-center border-b border-darkBorder pb-3">
                 <h3 class="text-lg font-bold">設定</h3>
@@ -835,9 +835,9 @@
                 <p class="px-1 text-xs leading-5 text-gray-500">雲端備份已加密。</p>
             </div>
         </div>
-    </main>
+    </div>
 
-    <main id="modal-theme-settings" class="hidden min-h-screen bg-darkBg">
+    <section id="modal-theme-settings" class="fixed inset-0 z-[60] hidden flex-col bg-darkBg overflow-y-auto no-scrollbar pb-10">
         <header class="sticky top-0 z-10 flex items-center justify-between border-b border-darkBorder/60 bg-darkBg/95 px-4 py-4 backdrop-blur-md">
             <button type="button" onclick="closeThemeSettingsModal()" class="w-10 text-left text-accentBlue" aria-label="返回設定"><i class="fa-solid fa-chevron-left text-lg"></i></button>
             <h2 class="text-lg font-bold">佈景主題</h2>
@@ -847,7 +847,7 @@
             <div id="theme-preference-options" class="rounded-3xl border border-darkBorder/60 bg-darkCard p-2"></div>
             <p class="mt-4 px-1 text-xs leading-5 text-gray-500">自動模式會在早上 6:00 使用淺色，晚上 18:00 切換為深色。</p>
         </main>
-    </main>
+    </section>
 
     <!-- Modal 5: 付款方式 / 類別 管理清單 -->
     <section id="modal-card-layout" class="fixed inset-0 z-[60] hidden flex-col bg-[#0f0f12] overflow-y-auto no-scrollbar pb-10">
@@ -1124,8 +1124,7 @@
         }
 
         function setupOverlayScrollLock() {
-            const surfaces = Array.from(document.querySelectorAll('[id^="modal-"], #view-subscription-detail'))
-                .filter(surface => !['modal-settings', 'modal-theme-settings'].includes(surface.id));
+            const surfaces = Array.from(document.querySelectorAll('[id^="modal-"], #view-subscription-detail'));
             const update = () => {
                 const hasOpenSurface = surfaces.some(surface => !surface.classList.contains('hidden'));
                 if (hasOpenSurface === overlayScrollLockActive) return;
@@ -2063,7 +2062,6 @@
         }
 
         let viewTransitionTimer = null;
-        let settingsReturnView = 'list';
 
         function resetNewScreenToTop(surface) {
             if (!surface) return;
@@ -2168,21 +2166,14 @@
             const listView = document.getElementById('view-list-container');
             const calView = document.getElementById('view-calendar-container');
             const analysisView = document.getElementById('view-analysis-container');
-            const settingsView = document.getElementById('modal-settings');
-            const themeSettingsView = document.getElementById('modal-theme-settings');
             const tabList = document.getElementById('tab-list');
             const tabCal = document.getElementById('tab-calendar');
             const analysisButton = document.getElementById('btn-view-analysis');
-            const appHeader = document.getElementById('app-header');
-            const addButton = document.querySelector('button[onclick="openAddModal()"]');
-            const views = { list: listView, calendar: calView, analysis: analysisView, settings: settingsView, theme: themeSettingsView };
+            const views = { list: listView, calendar: calView, analysis: analysisView };
             const targetView = views[view];
             if (!targetView) return;
             window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-            const isSettingsFlow = view === 'settings' || view === 'theme';
-            appHeader.classList.remove('is-hidden');
-            appHeader.classList.toggle('hidden', isSettingsFlow);
-            addButton?.classList.toggle('hidden', isSettingsFlow);
+            document.getElementById('app-header').classList.remove('is-hidden');
             const activeEntry = Object.entries(views).find(([, item]) => !item.classList.contains('hidden'));
             const activeView = activeEntry?.[1];
 
@@ -2198,10 +2189,6 @@
                 tabList.className = "px-4 py-1.5 rounded-full text-xs font-semibold text-gray-400 hover:text-white transition";
                 tabCal.className = "px-4 py-1.5 rounded-full text-xs font-semibold text-gray-400 hover:text-white transition";
                 analysisButton.className = "w-10 h-10 rounded-full bg-accentBlue flex items-center justify-center text-white transition";
-            } else {
-                tabList.className = "px-4 py-1.5 rounded-full text-xs font-semibold text-gray-400 hover:text-white transition";
-                tabCal.className = "px-4 py-1.5 rounded-full text-xs font-semibold text-gray-400 hover:text-white transition";
-                analysisButton.className = "w-10 h-10 rounded-full bg-darkCard flex items-center justify-center text-gray-300 hover:text-white transition";
             }
 
             if (activeView === targetView) {
@@ -2211,7 +2198,7 @@
                 return;
             }
             if (viewTransitionTimer) window.clearTimeout(viewTransitionTimer);
-            const viewOrder = { analysis: -1, list: 0, calendar: 1, settings: 2, theme: 3 };
+            const viewOrder = { analysis: -1, list: 0, calendar: 1 };
             const movingLeft = activeEntry ? viewOrder[view] > viewOrder[activeEntry[0]] : true;
             if (activeView) activeView.classList.add(movingLeft ? 'view-slide-out-left' : 'view-slide-out-right');
             viewTransitionTimer = window.setTimeout(() => {
@@ -2715,11 +2702,15 @@
 
         function openThemeSettingsModal() {
             renderThemePreferenceOptions();
-            switchView('theme');
+            const modal = document.getElementById('modal-theme-settings');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.scrollTop = 0;
+            animateOverlayIn(modal);
         }
 
         function closeThemeSettingsModal() {
-            switchView('settings');
+            closeOverlaySmooth(document.getElementById('modal-theme-settings'));
         }
 
         function updateCardLayout(key, value) {
@@ -3469,8 +3460,7 @@
                 topTapStart = null;
                 if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10) return;
                 const surface = start.target.closest?.('[id^="modal-"]:not(.hidden), #view-subscription-detail:not(.hidden)');
-                const isIndependentSettingsView = ['modal-settings', 'modal-theme-settings'].includes(surface?.id);
-                if (surface && !isIndependentSettingsView && typeof surface.scrollTo === 'function') {
+                if (surface && typeof surface.scrollTo === 'function') {
                     surface.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
                 } else {
                     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
@@ -4106,10 +4096,6 @@
         }
 
         function closeModal(id) {
-            if (id === 'modal-settings') {
-                switchView(settingsReturnView);
-                return;
-            }
             const modal = document.getElementById(id);
             if (id === 'modal-sub') {
                 const returnDetailId = subscriptionModalReturnDetailId;
@@ -4153,16 +4139,12 @@
         }
 
         function openSettingsModal() {
-            const currentView = [
-                ['list', 'view-list-container'],
-                ['calendar', 'view-calendar-container'],
-                ['analysis', 'view-analysis-container']
-            ].find(([, id]) => !document.getElementById(id).classList.contains('hidden'));
-            if (currentView) settingsReturnView = currentView[0];
             document.getElementById('default-currency').value = defaultCurrency;
             document.getElementById('display-currency').value = displayCurrency;
             refreshCustomSelects();
-            switchView('settings');
+            const modal = document.getElementById('modal-settings');
+            modal.classList.remove('hidden');
+            animateOverlayIn(modal);
         }
         function openCustomManager(type) {
             managerType = type;
