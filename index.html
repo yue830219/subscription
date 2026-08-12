@@ -1174,23 +1174,19 @@
                 overlayScrollLockActive = hasOpenSurface;
                 if (hasOpenSurface) {
                     overlayLockedScrollY = window.scrollY;
+                    // iOS 會在 body 改為 fixed、再恢復 static 時重新計算版面寬度。
+                    // 日曆使用等寬欄位，因而會在返回時看起來被往右擠壓；全螢幕
+                    // 彈層本身已攔住觸控，所以只鎖定捲動，不改動主頁的定位或寬度。
                     document.documentElement.style.overflow = 'hidden';
-                    document.body.style.position = 'fixed';
-                    document.body.style.top = `-${overlayLockedScrollY}px`;
-                    document.body.style.left = '0';
-                    document.body.style.right = '0';
-                    document.body.style.width = '100%';
                     document.body.style.overflow = 'hidden';
+                    document.documentElement.style.overscrollBehavior = 'none';
+                    document.body.style.overscrollBehavior = 'none';
                     return;
                 }
                 document.documentElement.style.overflow = '';
-                document.body.style.position = '';
-                document.body.style.top = '';
-                document.body.style.left = '';
-                document.body.style.right = '';
-                document.body.style.width = '';
                 document.body.style.overflow = '';
-                window.scrollTo(0, overlayLockedScrollY);
+                document.documentElement.style.overscrollBehavior = '';
+                document.body.style.overscrollBehavior = '';
             };
             const observer = new MutationObserver(update);
             surfaces.forEach(surface => observer.observe(surface, { attributes: true, attributeFilter: ['class'] }));
