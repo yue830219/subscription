@@ -487,7 +487,7 @@
                     </div>
                 </button>
                 <span aria-hidden="true" class="absolute left-1/2 top-1/2 ml-24 -translate-y-1/2 w-[42px] h-[42px] rounded-full border-[3px] border-[#45454d] bg-[#101014] p-[5px] shadow-lg">
-                    <span id="color-picker-preview" class="block w-full h-full rounded-full bg-[#252529] border border-white/20"></span>
+                    <span id="color-picker-preview" class="block w-full h-full rounded-full border border-white/20" style="background-color:#252529"></span>
                 </span>
                 <input type="color" id="color-picker-btn" value="#252529" oninput="onColorPicked(this.value)" onchange="onColorPicked(this.value)" aria-label="選擇背景顏色" title="選擇背景顏色" class="color-picker-input absolute left-1/2 top-1/2 ml-24 -translate-y-1/2 w-[42px] h-[42px] cursor-pointer opacity-0">
             </div>
@@ -2501,7 +2501,17 @@
             const detailView = document.getElementById('view-subscription-detail');
             detailView.scrollTop = 0;
             requestAnimationFrame(() => { detailView.scrollTop = 0; });
-            if (shouldAnimate) animateOverlayIn(detailView, Array.from(detailView.children));
+            if (shouldAnimate) {
+                // 背景必須立即保持不透明，避免進場第一幀露出列表與滑動操作按鈕。
+                const detailBackground = detailView.querySelector(':scope > [aria-hidden="true"]');
+                if (detailBackground) {
+                    detailBackground.style.transition = '';
+                    detailBackground.style.transform = '';
+                    detailBackground.style.opacity = '1';
+                    detailBackground.style.willChange = '';
+                }
+                animateOverlayIn(detailView, Array.from(detailView.children).filter(element => element !== detailBackground));
+            }
         }
 
         function closeSubscriptionDetail() {
