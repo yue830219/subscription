@@ -103,9 +103,11 @@
         html.theme-light [style*="background-color"].text-white,
         html.theme-light [style*="background-color"] > .text-white,
         html.theme-light .bg-accentBlue.text-white,
+        html.theme-light .bg-emerald-500.text-white,
         html.theme-light .bg-red-500.text-white,
         html.theme-light .bg-red-600.text-white { color: #fff !important; }
         html.theme-light .bg-accentBlue .text-white,
+        html.theme-light .bg-emerald-500 .text-white,
         html.theme-light .bg-red-500 .text-white,
         html.theme-light .bg-red-600 .text-white { color: #fff !important; }
         html.theme-light #analysis-annual-card { background-color: #dff7eb !important; border-color: #a7e8c8 !important; }
@@ -835,7 +837,7 @@
     </section>
 
     <div id="modal-manager" onclick="closeModalOnBackdrop(event, 'modal-manager')" class="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-end justify-center hidden z-50 p-0">
-        <div class="bg-darkCard w-full max-w-md rounded-t-3xl max-h-[90vh] overflow-y-auto p-6 space-y-4 border border-darkBorder shadow-2xl">
+        <div class="bg-darkCard w-full max-w-md rounded-t-3xl max-h-[90dvh] overflow-y-auto p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] space-y-4 border border-darkBorder shadow-2xl">
             <div class="flex justify-between items-center border-b border-darkBorder pb-3">
                 <h3 id="manager-title" class="text-lg font-bold">管理項目</h3>
                 <button onclick="closeModal('modal-manager')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
@@ -1144,7 +1146,7 @@
                 select.parentNode.insertBefore(wrapper, select);
                 wrapper.appendChild(select);
                 select.classList.add('hidden');
-                select._customSelect = { wrapper, button, label, clearFilter, menu };
+                select._customSelect = { wrapper, button, label, clearFilter, chevron, menu };
                 button.onclick = event => {
                     event.stopPropagation();
                     select.dataset.lastValidValue = select.value;
@@ -1296,6 +1298,7 @@
             const hasFilter = isFilterSelect && Boolean(select.value);
             custom.clearFilter.classList.toggle('hidden', !hasFilter);
             custom.clearFilter.classList.toggle('flex', hasFilter);
+            custom.chevron.classList.toggle('hidden', hasFilter);
             custom.clearFilter.onclick = hasFilter ? event => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -1343,7 +1346,7 @@
             document.getElementById('backup-method-title').textContent = isExport ? '選擇匯出方式' : '選擇匯入方式';
             document.getElementById('backup-method-description').textContent = isExport ? '選擇位置。' : '選擇來源。';
             const methodIcon = document.getElementById('backup-method-icon');
-            methodIcon.className = `flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${isExport ? 'bg-accentBlue/15 text-accentBlue' : 'bg-emerald-400/15 text-emerald-500'}`;
+            methodIcon.className = `flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm ${isExport ? 'bg-accentBlue' : 'bg-emerald-500'}`;
             methodIcon.innerHTML = `<i class="fa-solid ${isExport ? 'fa-arrow-up-from-bracket' : 'fa-arrow-down-to-bracket'}"></i>`;
             document.getElementById('backup-method-local-label').textContent = isExport ? '匯出本機 JSON' : '匯入本機 JSON';
             document.getElementById('backup-method-cloud-label').textContent = isExport ? '匯出到雲端' : '從雲端匯入';
@@ -2067,6 +2070,43 @@
                 element.style.transform = 'translate3d(42px, 0, 0)';
                 element.style.opacity = '0';
             });
+            window.setTimeout(finish, 220);
+        }
+
+        function animateBottomSheetIn(modal) {
+            const panel = modal?.firstElementChild;
+            if (!modal || !panel) return;
+            modal.style.opacity = '0';
+            modal.style.transition = 'none';
+            panel.style.transform = 'translate3d(0, 48px, 0)';
+            panel.style.transition = 'none';
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                modal.style.transition = 'opacity 180ms ease-out';
+                modal.style.opacity = '1';
+                panel.style.transition = 'transform 260ms cubic-bezier(.22,.8,.2,1)';
+                panel.style.transform = 'translate3d(0, 0, 0)';
+            }));
+        }
+
+        function closeBottomSheetSmooth(modal) {
+            const panel = modal?.firstElementChild;
+            if (!modal || !panel || modal.classList.contains('hidden')) return;
+            const finish = () => {
+                modal.classList.add('hidden');
+                modal.style.opacity = '';
+                modal.style.transition = '';
+                panel.style.transform = '';
+                panel.style.transition = '';
+            };
+            if (modal.dataset.skipCloseAnimation === 'true') {
+                delete modal.dataset.skipCloseAnimation;
+                finish();
+                return;
+            }
+            modal.style.transition = 'opacity 170ms ease-in';
+            modal.style.opacity = '0';
+            panel.style.transition = 'transform 220ms cubic-bezier(.4,0,.8,.2)';
+            panel.style.transform = 'translate3d(0, 42px, 0)';
             window.setTimeout(finish, 220);
         }
 
@@ -3013,7 +3053,7 @@
             grid.innerHTML = '';
 
             for (let i = 0; i < firstDay; i++) {
-                grid.appendChild(Object.assign(document.createElement('div'), { className: "h-20 bg-darkCard rounded-xl border border-darkBorder/50" }));
+                grid.appendChild(Object.assign(document.createElement('div'), { className: "h-20 bg-darkCardSecondary rounded-xl border border-darkBorder/50" }));
             }
 
             let monthTotalTwd = 0;
@@ -3030,7 +3070,7 @@
                 const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
                 const dayCell = document.createElement('div');
                 
-                dayCell.className = `h-20 rounded-xl p-1.5 border flex flex-col overflow-hidden transition cursor-pointer hover:border-accentBlue/70 active:scale-[0.98] ${isToday ? 'bg-accentBlue/30 border-accentBlue' : 'bg-darkCardSecondary border-darkBorder'}`;
+                dayCell.className = `h-20 rounded-xl p-1.5 border flex flex-col overflow-hidden transition cursor-pointer hover:border-accentBlue/70 active:scale-[0.98] ${isToday ? 'bg-accentBlue/30 border-accentBlue' : 'bg-darkCard border-darkBorder'}`;
 
                 daySubs.forEach(({ sub }) => {
                     const twdAmount = convertToTwd(sub.amount, sub.currency || 'TWD');
@@ -3492,7 +3532,8 @@
             const match = /^#([0-9a-f]{6})$/i.exec(hex || '');
             if (!match) return '#252529';
             const channels = [0, 2, 4].map(offset => parseInt(match[1].slice(offset, offset + 2), 16));
-            const lighterChannels = channels.map(channel => Math.round(channel + (255 - channel) * 0.16));
+            const lightAmount = document.documentElement.classList.contains('theme-light') ? 0.78 : 0.16;
+            const lighterChannels = channels.map(channel => Math.round(channel + (255 - channel) * lightAmount));
             return `rgb(${lighterChannels.join(', ')})`;
         }
 
@@ -3898,6 +3939,8 @@
                         openSubscriptionDetail(returnDetailId);
                     }
                 });
+            } else if (id === 'modal-manager') {
+                closeBottomSheetSmooth(modal);
             } else {
                 closeOverlaySmooth(modal);
             }
@@ -3946,7 +3989,7 @@
             renderManagerList();
             const modal = document.getElementById('modal-manager');
             modal.classList.remove('hidden');
-            animateOverlayIn(modal);
+            animateBottomSheetIn(modal);
             if (pendingSubscriptionManagerType === type) {
                 requestAnimationFrame(() => document.getElementById('manager-new-input').focus());
             }
