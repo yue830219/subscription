@@ -125,6 +125,11 @@
             pointer-events: none;
         }
         #theme-preview-status-shield.is-active { display: block; }
+        #theme-preview-status-shield.is-status-strip {
+            inset: 0 0 auto;
+            height: 0.4rem;
+            opacity: 1;
+        }
         /* TEMP VERSION BADGE: remove this block and #app-version-badge when requested. */
         #app-version-badge {
             position: fixed;
@@ -1130,7 +1135,7 @@
         }
 
         // TEMP VERSION BADGE: increment after every user-visible update; remove when requested.
-        const APP_VERSION = 'v1.0.6';
+        const APP_VERSION = 'v1.0.7';
 
         const DEFAULT_CARD_LAYOUT = {
             coloredCard: true,
@@ -3255,10 +3260,16 @@
                 );
                 await themePreviewAnimation.finished;
                 if (sequence !== themePreviewTransitionSequence) return;
+                themePreviewAnimation.cancel();
+                themePreviewAnimation = null;
+                shield.classList.add('is-status-strip');
+                shield.style.opacity = '1';
             } catch (error) {
                 if (sequence === themePreviewTransitionSequence) applyThemePreference(value);
             } finally {
-                if (sequence === themePreviewTransitionSequence) stopThemePreviewTransition();
+                if (sequence === themePreviewTransitionSequence && !shield.classList.contains('is-status-strip')) {
+                    stopThemePreviewTransition();
+                }
             }
         }
 
@@ -3276,7 +3287,7 @@
         function clearThemePreviewStatusShield() {
             const shield = document.getElementById('theme-preview-status-shield');
             if (!shield) return;
-            shield.classList.remove('is-active');
+            shield.classList.remove('is-active', 'is-status-strip');
             shield.style.opacity = '';
             shield.style.backgroundColor = '';
         }
