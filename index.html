@@ -1792,8 +1792,9 @@
             }
 
             const avatar = safeImageSrc(profile.avatar);
+            const rememberedPassword = String(sessionStorage.getItem('subscription_sync_password') || '');
             container.innerHTML = `
-                <form autocomplete="on" onsubmit="saveAccountProfile(event)" class="account-profile-card rounded-[2rem] p-4 flex items-center gap-4">
+                <div class="account-profile-card rounded-[2rem] p-4 flex items-center gap-4">
                     <div class="flex w-20 shrink-0 flex-col items-center gap-3">
                         <label class="relative cursor-pointer" aria-label="上傳帳戶大頭照">
                             ${avatar
@@ -1802,14 +1803,14 @@
                             <span class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-accentBlue text-white border-2 border-darkCard flex items-center justify-center text-xs"><i class="fa-solid fa-camera"></i></span>
                             <input id="account-avatar-upload" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" onchange="handleAccountAvatarUpload(event)">
                         </label>
-                        <button type="submit" class="account-profile-save py-1 text-sm font-bold transition active:scale-[0.98]">儲存</button>
+                        <button type="button" onclick="saveAccountProfile()" class="account-profile-save py-1 text-sm font-bold transition active:scale-[0.98]">儲存</button>
                     </div>
                     <div class="min-w-0 flex-1 space-y-2">
-                        <input id="subscription-account-name" name="name" type="text" maxlength="60" autocomplete="name" autocapitalize="words" placeholder="名稱" value="${escapeHTML(profile.name)}" oninput="handleAccountProfileInput()" class="account-profile-input w-full border-0 bg-transparent px-0 py-1.5 text-base font-bold text-white outline-none transition placeholder:text-gray-500">
+                        <input id="subscription-account-name" name="name" type="text" maxlength="60" autocomplete="name" autocapitalize="words" autocorrect="off" placeholder="名稱" value="${escapeHTML(profile.name)}" oninput="handleAccountProfileInput()" class="account-profile-input w-full border-0 bg-transparent px-0 py-1.5 text-base font-bold text-white outline-none transition placeholder:text-gray-500">
                         <input id="subscription-sync-email" name="username" type="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="E-mail" value="${escapeHTML(email)}" oninput="handleAccountProfileInput()" onblur="saveSubscriptionSyncEmailIfValid()" class="account-profile-input w-full border-0 bg-transparent px-0 py-1.5 text-base text-white outline-none transition placeholder:text-gray-500">
-                        <input id="subscription-sync-password" name="current-password" type="password" autocomplete="current-password" spellcheck="false" placeholder="備份密碼（至少 10 個字元）" oninput="handleAccountProfileInput()" class="account-profile-input w-full border-0 bg-transparent px-0 py-1.5 text-base text-white outline-none transition placeholder:text-gray-500">
+                        <input id="subscription-sync-password" name="current-password" type="password" autocomplete="current-password" spellcheck="false" placeholder="備份密碼（至少 10 個字元）" value="${escapeHTML(rememberedPassword)}" oninput="handleAccountProfileInput()" class="account-profile-input w-full border-0 bg-transparent px-0 py-1.5 text-base text-white outline-none transition placeholder:text-gray-500">
                     </div>
-                </form>`;
+                </div>`;
             validateSubscriptionSyncEmail();
         }
 
@@ -1832,8 +1833,7 @@
             if (passwordInput?.value) sessionStorage.setItem('subscription_sync_password', passwordInput.value);
         }
 
-        function saveAccountProfile(event) {
-            event?.preventDefault();
+        function saveAccountProfile() {
             handleAccountProfileInput();
             const name = String(document.getElementById('subscription-account-name')?.value || '').trim();
             const email = getSubscriptionSyncEmail();
