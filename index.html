@@ -52,6 +52,9 @@
             const useLight = preference === 'light' || (preference === 'auto' && hour >= 6 && hour < 18);
             document.documentElement.classList.toggle('theme-light', useLight);
             document.documentElement.classList.toggle('dark', !useLight);
+            if (sessionStorage.getItem('app_theme_transition') === '1') {
+                document.documentElement.classList.add('theme-transition-arrival');
+            }
         })();
     </script>
     <style>
@@ -77,6 +80,20 @@
             scrollbar-width: none;
         }
         html.theme-light body { background-color: #f2f4f8; color: #111827; }
+        html.theme-transition-leaving body {
+            opacity: 0;
+            transform: translate3d(-12px, 0, 0) scale(.99);
+            transition: opacity 360ms ease, transform 360ms cubic-bezier(.4,0,.8,.2);
+        }
+        html.theme-transition-arrival body {
+            opacity: 0;
+            transform: translate3d(12px, 0, 0) scale(.99);
+        }
+        html.theme-transition-ready body {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) scale(1);
+            transition: opacity 420ms ease, transform 420ms cubic-bezier(.2,.8,.2,1);
+        }
         .main-top-bar {
             background: transparent !important;
             border-bottom-color: transparent !important;
@@ -1148,6 +1165,7 @@
             document.addEventListener('touchstart', dismissSubscriptionSwipeOnOutsidePress, true);
             document.addEventListener('click', consumeSubscriptionSwipeDismissClick, true);
             applyThemePreference();
+            completeThemeTransitionArrival();
             populateDropdowns();
             document.getElementById('default-currency').value = defaultCurrency;
             document.getElementById('display-currency').value = displayCurrency;
@@ -3149,8 +3167,7 @@
             return hour >= 6 && hour < 18 ? 'light' : 'dark';
         }
 
-        function applyThemePreference() {
-            const preference = getThemePreference();
+        function applyThemePreference(preference = getThemePreference()) {
             const theme = resolvedTheme(preference);
             const useLight = theme === 'light';
             document.documentElement.classList.toggle('theme-light', useLight);
@@ -3172,7 +3189,7 @@
         function selectThemePreference(value) {
             if (!['auto', 'light', 'dark'].includes(value)) return;
             pendingThemePreference = value;
-            renderThemePreferenceOptions();
+            applyThemePreference(value);
         }
 
         function commitThemePreference() {
@@ -3181,8 +3198,21 @@
                 : getThemePreference();
             localStorage.setItem('app_theme_preference', value);
             pendingThemePreference = null;
+            applyThemePreference(value);
+            sessionStorage.setItem('app_theme_transition', '1');
             const mainUrl = window.location.href.split(/[?#]/)[0];
-            window.location.replace(mainUrl);
+            document.documentElement.classList.add('theme-transition-leaving');
+            window.setTimeout(() => window.location.replace(mainUrl), 370);
+        }
+
+        function completeThemeTransitionArrival() {
+            if (!document.documentElement.classList.contains('theme-transition-arrival')) return;
+            sessionStorage.removeItem('app_theme_transition');
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                document.documentElement.classList.remove('theme-transition-arrival');
+                document.documentElement.classList.add('theme-transition-ready');
+                window.setTimeout(() => document.documentElement.classList.remove('theme-transition-ready'), 430);
+            }));
         }
 
         function renderThemePreferenceOptions() {
@@ -3214,8 +3244,11 @@
         }
 
         function closeThemeSettingsModal() {
-            pendingThemePreference = null;
-            closeOverlaySmooth(document.getElementById('modal-theme-settings'));
+            const modal = document.getElementById('modal-theme-settings');
+            closeOverlaySmooth(modal, [modal], () => {
+                pendingThemePreference = null;
+                applyThemePreference();
+            });
         }
 
         function updateCardLayout(key, value) {
