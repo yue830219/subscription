@@ -242,10 +242,13 @@
             box-shadow: none !important;
         }
         .manager-drag-placeholder > * { visibility: hidden; }
-        .subscription-swipe-row { position: relative; overflow: hidden; border-radius: 1rem; }
+        .subscription-swipe-row { position: relative; overflow: visible; border-radius: 1rem; }
         .subscription-swipe-actions { position: absolute; inset: 0 .5rem 0 auto; display: flex; width: 7.5rem; align-items: center; justify-content: flex-end; gap: .5rem; }
         .subscription-swipe-action { width: 2.75rem; height: 2.75rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, .2); }
         .subscription-swipe-card { position: relative; z-index: 1; will-change: transform; }
+        .notification-status-badge { position: absolute; z-index: 3; top: -.45rem; right: -.45rem; width: 1.55rem; height: 1.55rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #fff !important; border: 2px solid rgb(var(--theme-bg)); box-shadow: 0 3px 9px rgba(0, 0, 0, .28); pointer-events: none; font-size: .68rem; }
+        .notification-status-badge.is-enabled { background: #3b82f6; }
+        .notification-status-badge.is-disabled { background: #64748b; }
         .subscription-inactive-card { filter: grayscale(.25) brightness(.72); }
         .app-switch-track { width: 3rem; height: 1.75rem; flex-shrink: 0; border-radius: 9999px; background: #4b5563; transition: background-color 200ms ease; }
         .app-switch-thumb { position: absolute; left: .25rem; top: .25rem; width: 1.25rem; height: 1.25rem; border-radius: 9999px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); pointer-events: none; transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
@@ -322,6 +325,7 @@
                 <option value="category">類別</option>
                 <option value="payment">付款方式</option>
                 <option value="cycle">週期</option>
+                <option value="notification">依通知狀態</option>
             </select>
             <select id="list-group" onchange="renderList()" aria-label="群組方式" class="shrink-0 bg-darkCard rounded-xl px-3 py-2 text-xs text-gray-300 border border-darkBorder/50 focus:outline-none focus:ring-1 focus:ring-accentBlue">
                 <option value="upcoming" selected>即將到來</option>
@@ -1077,6 +1081,7 @@
             showCategory: false,
             showPaymentMethod: true,
             showConvertedAmount: true,
+            showNotificationBadge: true,
             secondaryInfo: 'nextDate'
         };
 
@@ -3207,7 +3212,8 @@
                 cardLayout.showCategory ? `<span class="rounded-md bg-white/10 px-2 py-0.5 text-[10px] ${secondaryClass}">影音娛樂</span>` : '',
                 cardLayout.showPaymentMethod ? `<span class="rounded-md bg-white/10 px-2 py-0.5 text-[10px] ${secondaryClass}">Visa</span>` : ''
             ].filter(Boolean).join('');
-            document.getElementById('card-layout-preview').innerHTML = `<div class="card-layout-preview-card flex min-h-[4.5rem] items-center justify-between gap-3 overflow-hidden rounded-2xl border border-darkBorder/40 p-3.5 shadow-sm" style="background:${cardBg}"><div class="flex min-w-0 flex-1 items-center gap-3"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-xl font-black text-white">N</div><div class="min-w-0 flex-1"><div class="truncate text-base font-bold ${textClass}">Netflix</div>${previewTags ? `<div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">${previewTags}</div>` : ''}</div></div><div class="shrink-0 text-right"><div class="text-lg font-extrabold ${textClass}">${previewTwdAmount}</div>${cardLayout.showConvertedAmount ? `<div class="text-[11px] ${secondaryClass}">USD $20</div>` : ''}<div class="text-[11px] ${secondaryClass}">每月</div></div></div>`;
+            const previewNotificationBadge = cardLayout.showNotificationBadge ? '<span class="notification-status-badge is-enabled"><i class="fa-solid fa-bell"></i></span>' : '';
+            document.getElementById('card-layout-preview').innerHTML = `<div class="card-layout-preview-card relative flex min-h-[4.5rem] items-center justify-between gap-3 overflow-visible rounded-2xl border border-darkBorder/40 p-3.5 shadow-sm" style="background:${cardBg}">${previewNotificationBadge}<div class="flex min-w-0 flex-1 items-center gap-3"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-xl font-black text-white">N</div><div class="min-w-0 flex-1"><div class="truncate text-base font-bold ${textClass}">Netflix</div>${previewTags ? `<div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">${previewTags}</div>` : ''}</div></div><div class="shrink-0 text-right"><div class="text-lg font-extrabold ${textClass}">${previewTwdAmount}</div>${cardLayout.showConvertedAmount ? `<div class="text-[11px] ${secondaryClass}">USD $20</div>` : ''}<div class="text-[11px] ${secondaryClass}">每月</div></div></div>`;
 
             const secondaryOptions = [
                 ['nextDate', '下次付款日期'], ['daysUntil', '距下次付款天數'], ['notes', '說明'], ['none', '無']
@@ -3217,7 +3223,8 @@
                 cardLayoutToggle('showCycle', 'fa-rotate', '計費週期'),
                 cardLayoutToggle('showCategory', 'fa-shapes', '類別'),
                 cardLayoutToggle('showPaymentMethod', 'fa-credit-card', '付款方式'),
-                cardLayoutToggle('showConvertedAmount', 'fa-money-bill-transfer', '換算前價格')
+                cardLayoutToggle('showConvertedAmount', 'fa-money-bill-transfer', '換算前價格'),
+                cardLayoutToggle('showNotificationBadge', 'fa-bell', '通知狀態鈴鐺')
             ].join('<div class="mx-3 border-t border-darkBorder/70"></div>') + `<div class="mx-3 border-t border-darkBorder/70"></div><div class="px-3 py-3"><p class="mb-2 text-xs text-gray-400">標題下方資訊</p><div class="overflow-hidden rounded-xl bg-darkBg">${secondaryOptions.map(([value, label]) => `<button type="button" onclick="updateCardLayout('secondaryInfo', '${value}')" class="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm hover:bg-white/5">${label}${cardLayout.secondaryInfo === value ? '<i class="fa-solid fa-check text-accentBlue"></i>' : ''}</button>`).join('')}</div></div>`;
         }
 
@@ -3278,6 +3285,7 @@
                     if (sortBy === 'category') return compareText(a.category, b.category) || compareText(a.name, b.name);
                     if (sortBy === 'payment') return compareText(a.paymentMethod, b.paymentMethod) || compareText(a.name, b.name);
                     if (sortBy === 'cycle') return compareText(a.paymentType === 'onetime' ? '一次性' : a.cycle, b.paymentType === 'onetime' ? '一次性' : b.cycle) || compareText(a.name, b.name);
+                    if (sortBy === 'notification') return Number(a.notificationEnabled === false) - Number(b.notificationEnabled === false) || compareText(a.name, b.name);
                     const difference = (getNextPaymentDate(a)?.getTime() || Infinity) - (getNextPaymentDate(b)?.getTime() || Infinity);
                     return sortBy === 'remaining-desc' ? -difference : difference;
                 });
@@ -3380,7 +3388,7 @@
                         <button type="button" onclick="toggleSubscriptionStatus('${escapeHTML(sub.id)}')" class="subscription-swipe-action bg-slate-500 hover:bg-slate-400" aria-label="${isActive ? '停用' : '啟用'} ${escapeHTML(sub.name)}"><i class="fa-solid ${isActive ? 'fa-toggle-on' : 'fa-toggle-off'} text-lg"></i></button>
                         <button type="button" onclick="quickDeleteSubscription('${escapeHTML(sub.id)}')" class="subscription-swipe-action bg-red-500 hover:bg-red-600" aria-label="刪除 ${escapeHTML(sub.name)}"><i class="fa-solid fa-trash text-base"></i></button>`;
                     const itemCard = document.createElement('div');
-                    itemCard.className = `subscription-swipe-card subscription-list-card min-h-[4.5rem] p-3.5 rounded-2xl flex items-center justify-between gap-1 shadow-sm relative overflow-hidden group cursor-pointer transition-transform duration-200 ease-out active:scale-[0.99] ${isActive ? '' : 'subscription-inactive-card'}`;
+                    itemCard.className = `subscription-swipe-card subscription-list-card min-h-[4.5rem] p-3.5 rounded-2xl flex items-center justify-between gap-1 shadow-sm relative overflow-visible group cursor-pointer transition-transform duration-200 ease-out active:scale-[0.99] ${isActive ? '' : 'subscription-inactive-card'}`;
                     itemCard.style.backgroundColor = cardBgColor;
                     setupSubscriptionCardPress(itemCard, sub.id);
                     setupSubscriptionCardSwipe(swipeRow, itemCard);
@@ -3409,8 +3417,13 @@
                         cardLayout.showPaymentMethod ? `<span class="max-w-full break-words text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-black/10 ${secTxtClass}"><i class="fa-regular fa-credit-card mr-1"></i>${escapeHTML(sub.paymentMethod || '未設定')}</span>` : ''
                     ].filter(Boolean);
                     const metadataHtml = metadata.length ? `<div class="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 mt-1">${metadata.join('')}</div>` : '';
+                    const notificationEnabled = sub.notificationEnabled !== false;
+                    const notificationBadge = cardLayout.showNotificationBadge
+                        ? `<span class="notification-status-badge ${notificationEnabled ? 'is-enabled' : 'is-disabled'}"><i class="fa-solid ${notificationEnabled ? 'fa-bell' : 'fa-bell-slash'}"></i></span>`
+                        : '';
 
                     itemCard.innerHTML = `
+                        ${notificationBadge}
                         <div class="min-w-0 flex flex-1 items-center space-x-2">
                             ${logoHtml}
                             <div class="min-w-0 flex-1 py-0.5">
