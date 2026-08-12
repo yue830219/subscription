@@ -85,7 +85,24 @@
         #modal-settings,
         #modal-theme-settings,
         #modal-card-layout,
-        #modal-manager { padding-top: env(safe-area-inset-top, 0px); }
+        #modal-manager {
+            padding-top: env(safe-area-inset-top, 0px);
+            bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+            background-color: rgb(var(--theme-bg)) !important;
+        }
+        #view-subscription-detail,
+        #modal-sub,
+        #modal-theme-settings,
+        #modal-card-layout,
+        #modal-manager {
+            padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px));
+        }
+        #view-subscription-detail {
+            padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+        }
+        #modal-settings {
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
         html.theme-light select { color-scheme: light; }
         html.theme-light select option { background-color: #fff; color: #111827; }
         html.theme-light .text-white { color: #111827 !important; }
