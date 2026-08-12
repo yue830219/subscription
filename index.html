@@ -139,6 +139,26 @@
         html.theme-light .calendar-outside-month { background-color: #f5f6f8 !important; border-color: #e5e7eb !important; }
         html.theme-light #modal-app-dialog > div,
         html.theme-light #modal-backup-method > div { box-shadow: 0 24px 60px rgba(15, 23, 42, .18); }
+        .account-profile-card {
+            min-height: 7.5rem;
+            border: 1px solid rgba(255, 255, 255, .08);
+            background: #2b2930;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, .14);
+        }
+        .account-profile-avatar {
+            background: #3a3840;
+            color: #cbd5e1;
+        }
+        .account-profile-card .account-profile-name { color: #fff; }
+        .account-profile-card .account-profile-email { color: #b8b4bf; }
+        html.theme-light .account-profile-card {
+            border-color: rgba(90, 78, 99, .05);
+            background: #e8e2eb;
+            box-shadow: none;
+        }
+        html.theme-light .account-profile-avatar { background: #d8d0dc; color: #675f6c; }
+        html.theme-light .account-profile-card .account-profile-name { color: #1f1b22 !important; }
+        html.theme-light .account-profile-card .account-profile-email { color: #716b75 !important; }
         body, body * {
             user-select: none;
             -webkit-user-select: none;
@@ -719,6 +739,11 @@
             </div>
 
             <div class="space-y-3">
+                <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">帳戶</h4>
+                <div id="account-profile-content"></div>
+            </div>
+
+            <div class="space-y-3">
                 <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">管理項目</h4>
                 <div class="space-y-3">
                     <button type="button" onclick="openCustomManager('payment')" class="w-full min-h-[5.25rem] rounded-2xl bg-darkCardSecondary p-3.5 flex justify-between items-center gap-3 text-left cursor-pointer shadow-sm transition active:scale-[0.99] hover:bg-[#303035]">
@@ -818,12 +843,6 @@
             <div class="space-y-3">
                 <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">資料備份</h4>
                 <input id="app-data-import-file" type="file" accept="application/json,.json" onchange="importAppData(event)" class="hidden">
-                <form autocomplete="on" onsubmit="event.preventDefault()" class="rounded-2xl border border-darkBorder bg-darkBg p-4">
-                    <h4 class="mb-3 text-base font-bold text-white">信箱</h4>
-                    <input id="subscription-sync-email" name="username" type="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="例如 alice@gmail.com" oninput="validateSubscriptionSyncEmail()" onblur="saveSubscriptionSyncEmailIfValid()" class="mb-3 w-full rounded-xl border border-darkBorder bg-darkCardSecondary px-3 py-2.5 text-base text-white outline-none transition focus:border-accentBlue focus:ring-1 focus:ring-accentBlue">
-                    <input id="subscription-sync-password" name="current-password" type="password" autocomplete="current-password" spellcheck="false" placeholder="備份密碼（至少 10 個字元）" class="mb-2 w-full rounded-xl border border-darkBorder bg-darkCardSecondary px-3 py-2.5 text-base text-white outline-none transition focus:border-accentBlue focus:ring-1 focus:ring-accentBlue">
-                    <p id="subscription-sync-email-message" class="mt-2 text-xs leading-5 text-gray-500">忘記密碼無法還原雲端備份。</p>
-                </form>
                 <div class="grid grid-cols-2 gap-3">
                     <button type="button" onclick="openBackupMethodPicker('export')" class="rounded-2xl border border-darkBorder bg-darkBg p-4 text-left hover:border-accentBlue transition">
                         <i class="fa-solid fa-file-export text-accentBlue"></i><span class="mt-2 block text-sm font-bold">匯出資料</span><span class="mt-1 block text-xs text-gray-500">選擇位置</span>
@@ -832,7 +851,7 @@
                         <i class="fa-solid fa-file-import text-emerald-400"></i><span class="mt-2 block text-sm font-bold">匯入資料</span><span class="mt-1 block text-xs text-gray-500">選擇來源</span>
                     </button>
                 </div>
-                <p class="px-1 text-xs leading-5 text-gray-500">雲端備份已加密。</p>
+                <p class="px-1 text-xs leading-5 text-gray-500">雲端備份已加密；需要輸入備份密碼時，請點選上方帳戶卡片修改。</p>
             </div>
         </div>
     </div>
@@ -1071,6 +1090,7 @@
             document.getElementById('display-currency').value = displayCurrency;
             document.getElementById('list-group').value = 'upcoming';
             document.getElementById('list-compare').value = getListComparison();
+            renderAccountProfile();
             initSubscriptionSyncEmail();
             setupCustomSelects();
             renderList();
@@ -1636,9 +1656,9 @@
             await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
             const backup = {
                 app: 'subscription-manager',
-                version: 1,
+                version: 2,
                 exportedAt: new Date().toISOString(),
-                data: { subscriptions, paymentMethods, categories, paymentMethodIcons, categoryIcons, defaultCurrency, displayCurrency }
+                data: { subscriptions, paymentMethods, categories, paymentMethodIcons, categoryIcons, defaultCurrency, displayCurrency, accountProfile: getAccountProfileBackup() }
             };
             const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
             const link = document.createElement('a');
@@ -1687,6 +1707,7 @@
                 }
                 localStorage.setItem('app_default_currency', defaultCurrency);
                 localStorage.setItem('app_display_currency', displayCurrency);
+                applyAccountProfileBackup(data.accountProfile);
                 populateDropdowns();
                 document.getElementById('default-currency').value = defaultCurrency;
                 document.getElementById('display-currency').value = displayCurrency;
@@ -1705,6 +1726,125 @@
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
         }
 
+        let accountProfileEditing = false;
+
+        function getAccountProfile() {
+            return {
+                name: String(localStorage.getItem('subscription_account_name') || '').trim(),
+                avatar: safeImageSrc(localStorage.getItem('subscription_account_avatar') || '')
+            };
+        }
+
+        function getAccountProfileBackup() {
+            const { name, avatar } = getAccountProfile();
+            return { name, avatar };
+        }
+
+        function applyAccountProfileBackup(profile) {
+            if (!profile || typeof profile !== 'object') return;
+            const name = String(profile.name || '').trim().slice(0, 60);
+            const avatar = safeImageSrc(profile.avatar || '');
+            if (name) localStorage.setItem('subscription_account_name', name);
+            else localStorage.removeItem('subscription_account_name');
+            if (avatar) localStorage.setItem('subscription_account_avatar', avatar);
+            else localStorage.removeItem('subscription_account_avatar');
+            renderAccountProfile();
+        }
+
+        function accountProfileIsComplete() {
+            return localStorage.getItem('subscription_account_profile_ready') === 'true'
+                && Boolean(getAccountProfile().name)
+                && isValidSubscriptionSyncEmail(localStorage.getItem('subscription_sync_email'));
+        }
+
+        function accountAvatarMarkup(profile, sizeClass = 'w-20 h-20') {
+            const avatar = safeImageSrc(profile.avatar);
+            return avatar
+                ? `<img src="${avatar}" alt="帳戶大頭照" class="${sizeClass} shrink-0 rounded-full object-cover">`
+                : `<span class="account-profile-avatar ${sizeClass} shrink-0 rounded-full flex items-center justify-center text-2xl"><i class="fa-solid fa-user"></i></span>`;
+        }
+
+        function renderAccountProfile(forceEditor = false) {
+            const container = document.getElementById('account-profile-content');
+            if (!container) return;
+            const profile = getAccountProfile();
+            const email = String(localStorage.getItem('subscription_sync_email') || '').trim();
+            const showCard = !forceEditor && !accountProfileEditing && accountProfileIsComplete();
+
+            if (showCard) {
+                container.innerHTML = `
+                    <button type="button" onclick="openAccountProfileEditor()" class="account-profile-card w-full rounded-[2rem] px-4 py-4 flex items-center gap-4 text-left transition active:scale-[0.99]" aria-label="修改帳戶資料">
+                        ${accountAvatarMarkup(profile, 'w-20 h-20')}
+                        <span class="min-w-0 flex-1">
+                            <span class="account-profile-name block truncate text-2xl font-semibold">${escapeHTML(profile.name)}</span>
+                            <span class="account-profile-email mt-1 block truncate text-base">${escapeHTML(email)}</span>
+                        </span>
+                    </button>`;
+                return;
+            }
+
+            const avatar = safeImageSrc(profile.avatar);
+            container.innerHTML = `
+                <form autocomplete="on" onsubmit="event.preventDefault()" class="account-profile-card rounded-[2rem] p-4 flex items-start gap-4">
+                    <label class="relative mt-1 shrink-0 cursor-pointer" aria-label="上傳帳戶大頭照">
+                        ${avatar
+                            ? `<img id="account-avatar-preview" src="${avatar}" alt="帳戶大頭照" class="w-20 h-20 rounded-full object-cover">`
+                            : `<span id="account-avatar-preview" class="account-profile-avatar w-20 h-20 rounded-full flex items-center justify-center text-2xl"><i class="fa-solid fa-user"></i></span>`}
+                        <span class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-accentBlue text-white border-2 border-darkCard flex items-center justify-center text-xs"><i class="fa-solid fa-camera"></i></span>
+                        <input id="account-avatar-upload" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" onchange="handleAccountAvatarUpload(event)">
+                    </label>
+                    <div class="min-w-0 flex-1 space-y-2">
+                        <input id="subscription-account-name" type="text" maxlength="60" autocomplete="name" placeholder="名稱" value="${escapeHTML(profile.name)}" oninput="handleAccountProfileInput()" class="w-full border-0 border-b border-darkBorder bg-transparent px-0 py-1.5 text-base font-bold text-white outline-none transition placeholder:text-gray-500 focus:border-accentBlue">
+                        <input id="subscription-sync-email" name="username" type="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="E-mail" value="${escapeHTML(email)}" oninput="handleAccountProfileInput()" onblur="saveSubscriptionSyncEmailIfValid()" class="w-full border-0 border-b border-darkBorder bg-transparent px-0 py-1.5 text-base text-white outline-none transition placeholder:text-gray-500 focus:border-accentBlue">
+                        <input id="subscription-sync-password" name="current-password" type="password" autocomplete="current-password" spellcheck="false" placeholder="備份密碼（至少 10 個字元）" oninput="handleAccountProfileInput()" class="w-full border-0 border-b border-darkBorder bg-transparent px-0 py-1.5 text-base text-white outline-none transition placeholder:text-gray-500 focus:border-accentBlue">
+                    </div>
+                </form>`;
+            validateSubscriptionSyncEmail();
+        }
+
+        function openAccountProfileEditor() {
+            accountProfileEditing = true;
+            renderAccountProfile(true);
+            requestAnimationFrame(() => document.getElementById('subscription-account-name')?.focus());
+        }
+
+        function handleAccountProfileInput() {
+            const nameInput = document.getElementById('subscription-account-name');
+            const name = String(nameInput?.value || '').trim().slice(0, 60);
+            if (name) localStorage.setItem('subscription_account_name', name);
+            else localStorage.removeItem('subscription_account_name');
+
+            const emailIsValid = validateSubscriptionSyncEmail();
+            if (emailIsValid) localStorage.setItem('subscription_sync_email', getSubscriptionSyncEmail());
+
+            const passwordInput = document.getElementById('subscription-sync-password');
+            if (passwordInput?.value) sessionStorage.setItem('subscription_sync_password', passwordInput.value);
+            const password = getSubscriptionSyncPassword();
+            if (name && emailIsValid && password.length >= 10 && !accountProfileEditing) {
+                localStorage.setItem('subscription_account_profile_ready', 'true');
+                renderAccountProfile();
+            }
+        }
+
+        function handleAccountAvatarUpload(event) {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            if (!file) return;
+            if (file.size > 1500 * 1024) {
+                showAppAlert('大頭照請使用小於 1.5 MB 的圖片。');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                const avatar = safeImageSrc(reader.result);
+                if (!avatar) return;
+                localStorage.setItem('subscription_account_avatar', avatar);
+                const preview = document.getElementById('account-avatar-preview');
+                if (preview) preview.outerHTML = `<img id="account-avatar-preview" src="${avatar}" alt="帳戶大頭照" class="w-20 h-20 rounded-full object-cover">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
         function getSubscriptionSyncEmail() {
             const input = document.getElementById('subscription-sync-email');
             return String(input?.value || localStorage.getItem('subscription_sync_email') || '').trim().toLowerCase();
@@ -1720,26 +1860,23 @@
         function validateSubscriptionSyncEmail() {
             const input = document.getElementById('subscription-sync-email');
             const message = document.getElementById('subscription-sync-email-message');
-            if (!input || !message) return false;
+            if (!input) return false;
             const email = String(input.value || '').trim();
             if (!email) {
                 input.classList.remove('border-red-400', 'border-emerald-400');
                 input.classList.add('border-darkBorder');
-                message.textContent = '同步與恢復都會使用你的 E-mail。';
-                message.className = 'mt-2 text-xs leading-5 text-gray-500';
+                if (message) message.textContent = '';
                 return false;
             }
             if (!isValidSubscriptionSyncEmail(email)) {
                 input.classList.remove('border-darkBorder', 'border-emerald-400');
                 input.classList.add('border-red-400');
-                message.textContent = '請輸入有效的 E-mail 格式，例如 alice@gmail.com。';
-                message.className = 'mt-2 text-xs leading-5 text-red-400';
+                if (message) message.textContent = '';
                 return false;
             }
             input.classList.remove('border-darkBorder', 'border-red-400');
             input.classList.add('border-emerald-400');
-            message.textContent = 'E-mail 格式正確，可直接匯入或匯出備份。';
-            message.className = 'mt-2 text-xs leading-5 text-emerald-400';
+            if (message) message.textContent = '';
             return true;
         }
 
@@ -1749,7 +1886,7 @@
         }
 
         function getSubscriptionSyncPassword() {
-            return String(document.getElementById('subscription-sync-password')?.value || '');
+            return String(document.getElementById('subscription-sync-password')?.value || sessionStorage.getItem('subscription_sync_password') || '');
         }
 
         function ensureSubscriptionCloudSyncReady() {
@@ -1786,6 +1923,7 @@
                 defaultCurrency,
                 displayCurrency,
                 cardLayout,
+                accountProfile: getAccountProfileBackup(),
                 exportedAt: new Date().toISOString()
             };
         }
@@ -1900,6 +2038,7 @@
             localStorage.setItem('app_default_currency', defaultCurrency);
             localStorage.setItem('app_display_currency', displayCurrency);
             localStorage.setItem('app_card_layout', JSON.stringify(cardLayout));
+            applyAccountProfileBackup(data.accountProfile);
             populateDropdowns();
             document.getElementById('default-currency').value = defaultCurrency;
             document.getElementById('display-currency').value = displayCurrency;
@@ -4141,6 +4280,8 @@
         function openSettingsModal() {
             document.getElementById('default-currency').value = defaultCurrency;
             document.getElementById('display-currency').value = displayCurrency;
+            accountProfileEditing = false;
+            renderAccountProfile();
             refreshCustomSelects();
             const modal = document.getElementById('modal-settings');
             modal.classList.remove('hidden');
