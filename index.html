@@ -928,6 +928,20 @@
     </div>
 
     <!-- 網頁內提示／確認視窗 -->
+    <div id="modal-startup-account" class="fixed inset-0 z-[120] hidden items-center justify-center bg-darkBg p-5" role="dialog" aria-modal="true" aria-labelledby="startup-account-title">
+        <form id="startup-account-form" autocomplete="on" onsubmit="submitStartupAccount(event)" class="w-full max-w-sm rounded-3xl border border-darkBorder bg-darkCard p-6 shadow-2xl">
+            <div class="mb-6 text-center"><div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accentBlue/15 text-2xl text-accentBlue"><i class="fa-solid fa-cloud-arrow-up"></i></div><h2 id="startup-account-title" class="text-xl font-bold">登入雲端備份</h2><p id="startup-account-description" class="mt-2 text-sm leading-6 text-gray-400">輸入帳號後，可檢查並恢復你的加密備份。</p></div>
+            <div class="space-y-3">
+                <label class="block"><span class="mb-1.5 block text-xs font-medium text-gray-400">E-mail</span><input id="startup-account-email" name="username" type="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" required placeholder="name@example.com" class="w-full rounded-xl border border-darkBorder bg-darkBg px-3 py-3 text-base text-white outline-none transition focus:border-accentBlue"></label>
+                <label class="block"><span class="mb-1.5 block text-xs font-medium text-gray-400">備份密碼</span><input id="startup-account-password" name="current-password" type="password" autocomplete="current-password" required minlength="10" placeholder="至少 10 個字元" class="w-full rounded-xl border border-darkBorder bg-darkBg px-3 py-3 text-base text-white outline-none transition focus:border-accentBlue"></label>
+                <label id="startup-account-confirm-row" class="hidden"><span class="mb-1.5 block text-xs font-medium text-gray-400">確認備份密碼</span><input id="startup-account-confirm-password" name="new-password-confirmation" type="password" autocomplete="new-password" minlength="10" placeholder="再次輸入備份密碼" class="w-full rounded-xl border border-darkBorder bg-darkBg px-3 py-3 text-base text-white outline-none transition focus:border-accentBlue"></label>
+            </div>
+            <p id="startup-account-message" class="mt-3 min-h-5 text-center text-xs leading-5 text-gray-500" aria-live="polite">密碼只用於本機加密，無法為你找回。</p>
+            <button id="startup-account-submit" type="submit" class="mt-5 w-full rounded-xl bg-accentBlue py-3 text-base font-bold text-white transition active:scale-[0.98]">登入</button>
+            <button id="startup-account-mode-toggle" type="button" onclick="toggleStartupAccountMode()" class="mt-3 w-full py-2 text-sm font-semibold text-gray-400 transition hover:text-white">沒有帳戶？註冊</button>
+        </form>
+    </div>
+
     <div id="modal-app-dialog" class="fixed inset-0 hidden z-[100] bg-black/75 backdrop-blur-sm items-center justify-center p-5">
         <div class="w-full max-w-sm rounded-3xl border border-darkBorder bg-darkCard p-6 shadow-2xl">
             <div class="flex items-start gap-3">
@@ -1100,6 +1114,7 @@
             document.getElementById('list-compare').value = getListComparison();
             renderAccountProfile();
             initSubscriptionSyncEmail();
+            initStartupAccountFlow();
             setupCustomSelects();
             renderList();
             renderCalendar();
@@ -1760,9 +1775,9 @@
         }
 
         function accountProfileIsComplete() {
-            return localStorage.getItem('subscription_account_profile_ready') === 'true'
-                && Boolean(getAccountProfile().name)
-                && isValidSubscriptionSyncEmail(localStorage.getItem('subscription_sync_email'));
+            return isValidSubscriptionSyncEmail(localStorage.getItem('subscription_sync_email'))
+                && (localStorage.getItem('subscription_account_profile_ready') === 'true'
+                    || localStorage.getItem('subscription_cloud_login_completed') === 'true');
         }
 
         function accountAvatarMarkup(profile, sizeClass = 'w-20 h-20') {
@@ -1780,11 +1795,12 @@
             const showCard = !forceEditor && !accountProfileEditing && accountProfileIsComplete();
 
             if (showCard) {
+                const displayName = profile.name || '已登入帳戶';
                 container.innerHTML = `
                     <button type="button" onclick="openAccountProfileEditor()" class="account-profile-card w-full rounded-[2rem] px-4 py-4 flex items-center gap-4 text-left transition active:scale-[0.99]" aria-label="修改帳戶資料">
                         ${accountAvatarMarkup(profile, 'w-20 h-20')}
                         <span class="min-w-0 flex-1">
-                            <span class="account-profile-name block truncate text-2xl font-semibold">${escapeHTML(profile.name)}</span>
+                            <span class="account-profile-name block truncate text-2xl font-semibold">${escapeHTML(displayName)}</span>
                             <span class="account-profile-email mt-1 block truncate text-base">${escapeHTML(email)}</span>
                         </span>
                     </button>`;
@@ -1926,6 +1942,134 @@
             }
             localStorage.setItem('subscription_sync_email', email);
             return email;
+        }
+
+        let startupAccountMode = 'login';
+
+        function initStartupAccountFlow() {
+            if (localStorage.getItem('subscription_cloud_login_completed') === 'true') return;
+            const email = String(localStorage.getItem('subscription_sync_email') || '').trim();
+            const emailInput = document.getElementById('startup-account-email');
+            if (emailInput) emailInput.value = email;
+            setStartupAccountMode('login');
+            const modal = document.getElementById('modal-startup-account');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            requestAnimationFrame(() => emailInput?.focus());
+        }
+
+        function setStartupAccountMode(mode) {
+            startupAccountMode = mode === 'register' ? 'register' : 'login';
+            const registering = startupAccountMode === 'register';
+            document.getElementById('startup-account-title').textContent = registering ? '建立雲端帳戶' : '登入雲端備份';
+            document.getElementById('startup-account-description').textContent = registering
+                ? '建立後會立即將目前資料加密備份到雲端。'
+                : '輸入帳號後，可檢查並恢復你的加密備份。';
+            document.getElementById('startup-account-submit').textContent = registering ? '註冊並建立備份' : '登入';
+            document.getElementById('startup-account-mode-toggle').textContent = registering ? '已有帳戶？登入' : '沒有帳戶？註冊';
+            const confirmRow = document.getElementById('startup-account-confirm-row');
+            const confirmInput = document.getElementById('startup-account-confirm-password');
+            confirmRow.classList.toggle('hidden', !registering);
+            confirmInput.required = registering;
+            document.getElementById('startup-account-password').autocomplete = registering ? 'new-password' : 'current-password';
+            setStartupAccountMessage(registering ? '請妥善保存密碼；遺失後無法恢復加密備份。' : '密碼只用於本機加密，無法為你找回。');
+        }
+
+        function toggleStartupAccountMode() {
+            setStartupAccountMode(startupAccountMode === 'login' ? 'register' : 'login');
+            document.getElementById('startup-account-message').className = 'mt-3 min-h-5 text-center text-xs leading-5 text-gray-500';
+        }
+
+        function setStartupAccountMessage(message, isError = false) {
+            const target = document.getElementById('startup-account-message');
+            target.textContent = message;
+            target.className = `mt-3 min-h-5 text-center text-xs leading-5 ${isError ? 'text-red-400' : 'text-gray-500'}`;
+        }
+
+        function setStartupAccountBusy(isBusy) {
+            const submit = document.getElementById('startup-account-submit');
+            const toggle = document.getElementById('startup-account-mode-toggle');
+            const fields = document.querySelectorAll('#startup-account-form input');
+            submit.disabled = isBusy;
+            toggle.disabled = isBusy;
+            fields.forEach(field => field.disabled = isBusy);
+            submit.classList.toggle('opacity-60', isBusy);
+            submit.classList.toggle('cursor-wait', isBusy);
+        }
+
+        function saveStartupAccountCredentials(email, password) {
+            localStorage.setItem('subscription_sync_email', email);
+            sessionStorage.setItem('subscription_sync_password', password);
+            localStorage.setItem('subscription_cloud_login_completed', 'true');
+            renderAccountProfile();
+        }
+
+        function closeStartupAccountModal() {
+            const modal = document.getElementById('modal-startup-account');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function submitStartupAccount(event) {
+            event.preventDefault();
+            const email = String(document.getElementById('startup-account-email').value || '').trim().toLowerCase();
+            const password = String(document.getElementById('startup-account-password').value || '');
+            const confirmation = String(document.getElementById('startup-account-confirm-password').value || '');
+            const registering = startupAccountMode === 'register';
+            if (!isValidSubscriptionSyncEmail(email)) {
+                setStartupAccountMessage('請輸入有效的 E-mail。', true);
+                return;
+            }
+            if (password.length < 10) {
+                setStartupAccountMessage('備份密碼至少需要 10 個字元。', true);
+                return;
+            }
+            if (registering && password !== confirmation) {
+                setStartupAccountMessage('兩次輸入的備份密碼不相同。', true);
+                return;
+            }
+            if (!navigator.onLine) {
+                setStartupAccountMessage('目前沒有網路連線，請恢復連線後再試。', true);
+                return;
+            }
+
+            setStartupAccountBusy(true);
+            setStartupAccountMessage(registering ? '正在建立加密備份…' : '正在登入並檢查備份…');
+            sessionStorage.setItem('subscription_sync_password', password);
+            try {
+                const remote = await requestSubscriptionCloud('load', email);
+                if (registering) {
+                    if (remote.found_user) {
+                        setStartupAccountMessage('此帳戶已建立，請改用登入。', true);
+                        return;
+                    }
+                    await requestSubscriptionCloud('sync', email, getSubscriptionCloudPayload(email));
+                    saveStartupAccountCredentials(email, password);
+                    closeStartupAccountModal();
+                    await showAppAlert('已建立帳戶，並完成第一份加密雲端備份。', '註冊完成');
+                    return;
+                }
+
+                saveStartupAccountCredentials(email, password);
+                closeStartupAccountModal();
+                if (remote.found_user && hasSubscriptionCloudData(remote)) {
+                    const shouldRestore = await showAppConfirm('偵測到雲端加密備份。是否要用雲端資料覆蓋目前資料？', '恢復備份');
+                    if (shouldRestore) {
+                        showAppLoading('正在恢復雲端備份，請稍後…');
+                        try {
+                            applySubscriptionCloudData(remote);
+                            await showAppAlert('已恢復雲端備份。', '登入完成');
+                        } finally {
+                            closeAppLoading();
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('雲端帳戶處理失敗。', error);
+                setStartupAccountMessage('無法完成登入或註冊，請確認帳號、密碼與網路後再試。', true);
+            } finally {
+                setStartupAccountBusy(false);
+            }
         }
 
         function getSubscriptionCloudPayload(email = getSubscriptionSyncEmail()) {
