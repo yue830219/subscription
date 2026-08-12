@@ -199,6 +199,8 @@
         .subscription-swipe-actions { position: absolute; inset: 0 .5rem 0 auto; display: flex; width: 7.5rem; align-items: center; justify-content: flex-end; gap: .5rem; }
         .subscription-swipe-action { width: 2.75rem; height: 2.75rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, .2); }
         .subscription-swipe-card { position: relative; z-index: 1; will-change: transform; }
+        .auto-hide-top-bar { transition: transform 220ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease; will-change: transform, opacity; }
+        .auto-hide-top-bar.top-bar-hidden { transform: translate3d(0, calc(-72% - env(safe-area-inset-top, 0px)), 0); opacity: .2; pointer-events: none; }
         .subscription-inactive-card { filter: grayscale(.25) brightness(.72); }
         .app-switch-track { width: 3rem; height: 1.75rem; flex-shrink: 0; border-radius: 9999px; background: #4b5563; transition: background-color 200ms ease; }
         .app-switch-thumb { position: absolute; left: .25rem; top: .25rem; width: 1.25rem; height: 1.25rem; border-radius: 9999px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); pointer-events: none; transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
@@ -1077,6 +1079,7 @@
             setupPageBackgroundSwipe();
             setupEdgeBackSwipe();
             setupTapTopToScroll();
+            setupAutoHideTopBars();
             setupOverlayScrollLock();
             requestPortraitOrientationLock();
             if (location.protocol === 'https:' && 'serviceWorker' in navigator) {
@@ -3412,6 +3415,37 @@
                     switchView('list');
                 }
             }, { passive: true });
+        }
+
+        function setupAutoHideTopBars() {
+            const bindings = [
+                { scroller: window, header: document.getElementById('app-header') },
+                { scroller: document.getElementById('view-subscription-detail'), header: document.querySelector('#view-subscription-detail > header') },
+                { scroller: document.getElementById('modal-sub'), header: document.querySelector('#modal-sub > div:first-child') },
+                { scroller: document.getElementById('modal-settings'), header: document.querySelector('#modal-settings > div > div:first-child') },
+                { scroller: document.getElementById('modal-theme-settings'), header: document.querySelector('#modal-theme-settings > header') },
+                { scroller: document.getElementById('modal-card-layout'), header: document.querySelector('#modal-card-layout > header') },
+                { scroller: document.getElementById('modal-manager'), header: document.querySelector('#modal-manager > div > div:first-child') }
+            ].filter(binding => binding.scroller && binding.header);
+
+            bindings.forEach(({ scroller, header }) => {
+                header.classList.add('auto-hide-top-bar');
+                let lastTop = scroller === window ? window.scrollY : scroller.scrollTop;
+                let ticking = false;
+                scroller.addEventListener('scroll', () => {
+                    if (ticking) return;
+                    ticking = true;
+                    requestAnimationFrame(() => {
+                        const currentTop = scroller === window ? window.scrollY : scroller.scrollTop;
+                        const delta = currentTop - lastTop;
+                        if (currentTop <= 8) header.classList.remove('top-bar-hidden');
+                        else if (delta > 5) header.classList.add('top-bar-hidden');
+                        else if (delta < -5) header.classList.remove('top-bar-hidden');
+                        lastTop = Math.max(0, currentTop);
+                        ticking = false;
+                    });
+                }, { passive: true });
+            });
         }
 
         function setupTapTopToScroll() {
