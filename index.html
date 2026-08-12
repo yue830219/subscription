@@ -127,7 +127,7 @@
         html.theme-light .hover\:bg-\[\#303035\]:hover { background-color: #dde3ec !important; }
         html.theme-light input, html.theme-light textarea, html.theme-light select { color: #111827; }
         html.theme-light input::placeholder, html.theme-light textarea::placeholder { color: #94a3b8; }
-        html.theme-light #view-subscription-detail > div[aria-hidden="true"] { background-color: #f2f4f8 !important; }
+        html.theme-light #view-subscription-detail { background-color: #f2f4f8 !important; }
         html.theme-light .subscription-list-card .text-white,
         html.theme-light .card-layout-preview-card .text-white,
         html.theme-light [style*="background-color"].text-white,
@@ -452,8 +452,7 @@
     </main>
 
     <!-- 訂閱狀態詳情 -->
-    <section id="view-subscription-detail" class="fixed inset-0 z-50 hidden flex-col overflow-y-auto no-scrollbar pb-28">
-        <div class="fixed inset-0 bg-darkBg pointer-events-none" style="z-index:-1; box-shadow:-16px 0 34px rgba(0,0,0,.3)" aria-hidden="true"></div>
+    <section id="view-subscription-detail" class="fixed inset-0 z-50 isolate hidden flex-col overflow-y-auto no-scrollbar bg-darkBg pb-28" style="box-shadow:-16px 0 34px rgba(0,0,0,.3)">
         <header class="p-4 flex items-center justify-between sticky top-0 bg-darkBg/90 backdrop-blur-md z-10 border-b border-darkBorder/30">
             <button type="button" onclick="closeSubscriptionDetail()" class="w-10 h-10 rounded-full bg-darkCard flex items-center justify-center text-gray-300 hover:text-white transition" aria-label="返回列表">
                 <i class="fa-solid fa-chevron-left text-lg"></i>
