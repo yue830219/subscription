@@ -83,7 +83,7 @@
             -webkit-backdrop-filter: none !important;
             backdrop-filter: none !important;
             will-change: opacity;
-            transition: opacity 280ms ease, visibility 0s linear 0s;
+            transition: opacity 80ms linear;
         }
         .main-top-bar.is-hidden {
             opacity: 0;
@@ -95,7 +95,7 @@
             position: fixed;
             inset: 0 0 auto;
             z-index: 200;
-            height: 0.6rem;
+            height: 0.4rem;
             background: rgb(var(--theme-bg));
             pointer-events: none;
         }
@@ -3865,28 +3865,28 @@
             }, true);
         }
 
-        function setupMainTopBarAutoHide() {
+        function updateMainTopBarVisibility() {
             const header = document.getElementById('app-header');
-            let lastScrollY = window.scrollY;
+            const fadeDistance = 320;
+            const progress = Math.max(0, Math.min(1, window.scrollY / fadeDistance));
+            header.classList.remove('is-hidden');
+            header.style.opacity = `${1 - progress}`;
+            header.style.visibility = progress >= 0.995 ? 'hidden' : 'visible';
+            header.style.pointerEvents = progress >= 0.85 ? 'none' : '';
+        }
+
+        function setupMainTopBarAutoHide() {
             let ticking = false;
 
             window.addEventListener('scroll', () => {
                 if (ticking) return;
                 ticking = true;
                 requestAnimationFrame(() => {
-                    const scrollY = window.scrollY;
-                    const delta = scrollY - lastScrollY;
-
-                    if (scrollY <= 8) {
-                        header.classList.remove('is-hidden');
-                    } else if (scrollY > 56 && delta > 4) {
-                        header.classList.add('is-hidden');
-                    }
-
-                    lastScrollY = Math.max(0, scrollY);
+                    updateMainTopBarVisibility();
                     ticking = false;
                 });
             }, { passive: true });
+            updateMainTopBarVisibility();
         }
 
         function setupHeaderSwipe() {
@@ -4076,6 +4076,7 @@
                     resetSurfaces(elements);
                     resetSurfaces(backgroundElements);
                     resetSurfaces(topChromeElements);
+                    updateMainTopBarVisibility();
                 }, 310);
             };
 
@@ -4086,6 +4087,7 @@
                 window.clearTimeout(resetTimer);
                 resetSurfaces(back.elements);
                 resetSurfaces(back.backgroundElements);
+                updateMainTopBarVisibility();
                 const topChromeElements = getTopChromeElements(back.elements);
                 resetSurfaces(topChromeElements);
                 updateSurfaces(back.elements, { willChange: 'transform, opacity' });
@@ -4133,7 +4135,10 @@
                 const deltaY = touch.clientY - startPoint.y;
                 const { action, elements, backgroundElements, topChromeElements, element, axis } = startPoint;
                 startPoint = null;
-                if (axis !== 'horizontal' || deltaX < 70 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+                const isHorizontalReturn = (axis === 'horizontal' || (!axis && deltaX > 0))
+                    && deltaX >= 70
+                    && Math.abs(deltaX) > Math.abs(deltaY);
+                if (!isHorizontalReturn) {
                     updateSurfaces(elements, {
                         transition: 'transform 300ms cubic-bezier(.2,.8,.2,1), opacity 300ms ease',
                         transform: 'translate3d(0, 0, 0)',
@@ -4151,20 +4156,24 @@
                         resetSurfaces(elements);
                         resetSurfaces(backgroundElements);
                         resetSurfaces(topChromeElements);
+                        updateMainTopBarVisibility();
                     }, 310);
                     return;
                 }
+                const remainingOpacity = Math.max(0, Math.min(1, Number.parseFloat(element.style.opacity || '1')));
+                const completionDuration = Math.max(160, Math.round(remainingOpacity * 680));
+                const chromeDuration = Math.max(160, completionDuration - 40);
                 updateSurfaces(elements, {
-                    transition: 'transform 340ms cubic-bezier(.2,.8,.2,1), opacity 340ms ease',
+                    transition: `transform ${completionDuration}ms cubic-bezier(.2,.8,.2,1), opacity ${completionDuration}ms linear`,
                     transform: `translate3d(${window.innerWidth * 0.25}px, 0, 0)`,
                     opacity: '0'
                 });
                 updateSurfaces(topChromeElements, {
-                    transition: 'opacity 300ms ease',
+                    transition: `opacity ${chromeDuration}ms linear`,
                     opacity: '0'
                 });
                 updateSurfaces(backgroundElements, {
-                    transition: 'transform 340ms cubic-bezier(.2,.8,.2,1)',
+                    transition: `transform ${completionDuration}ms cubic-bezier(.2,.8,.2,1)`,
                     transform: 'translate3d(0, 0, 0)'
                 });
                 resetTimer = window.setTimeout(() => {
@@ -4175,7 +4184,8 @@
                     resetSurfaces(elements);
                     resetSurfaces(backgroundElements);
                     resetSurfaces(topChromeElements);
-                }, 350);
+                    updateMainTopBarVisibility();
+                }, completionDuration + 10);
             }, { passive: true, capture: true });
             document.addEventListener('touchcancel', cancelEdgeSwipe, { passive: true, capture: true });
         }
