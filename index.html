@@ -92,6 +92,14 @@
             pointer-events: none;
             transition-delay: 0s, 0s, 220ms;
         }
+        #ios-status-bar-shield {
+            position: fixed;
+            inset: 0 0 auto;
+            z-index: 200;
+            height: max(env(safe-area-inset-top, 0px), 3.25rem);
+            background: rgb(var(--theme-bg));
+            pointer-events: none;
+        }
         #floating-add-button {
             position: fixed !important;
             bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + .75rem)) !important;
@@ -285,6 +293,7 @@
     </style>
 </head>
 <body class="max-w-md mx-auto min-h-screen bg-darkBg text-white relative pb-20 border-x border-darkBorder/30">
+    <div id="ios-status-bar-shield" aria-hidden="true"></div>
     <div id="portrait-lock-overlay" class="fixed inset-0 z-[999] flex-col items-center justify-center gap-4 bg-[#0f0f12] p-8 text-center">
         <i class="fa-solid fa-mobile-screen-button text-5xl text-accentBlue"></i>
         <p class="text-xl font-bold">請將手機轉回直向</p>
@@ -4100,9 +4109,9 @@
                 event.preventDefault();
                 const horizontalOffset = Math.max(0, Math.min(deltaX, window.innerWidth));
                 const progress = horizontalOffset / window.innerWidth;
-                const travelLimit = window.innerWidth * 0.4;
+                const travelLimit = window.innerWidth * 0.25;
                 const surfaceOffset = Math.min(horizontalOffset, travelLimit);
-                const fadeProgress = Math.max(0, Math.min(1, (progress - 0.4) / 0.6));
+                const fadeProgress = Math.max(0, Math.min(1, (progress - 0.25) / 0.75));
                 updateSurfaces(startPoint.elements, {
                     transition: 'none',
                     transform: `translate3d(${surfaceOffset}px, 0, 0)`,
@@ -4148,7 +4157,7 @@
                 }
                 updateSurfaces(elements, {
                     transition: 'transform 210ms cubic-bezier(.2,.8,.2,1), opacity 210ms ease',
-                    transform: `translate3d(${window.innerWidth * 0.4}px, 0, 0)`,
+                    transform: `translate3d(${window.innerWidth * 0.25}px, 0, 0)`,
                     opacity: '0'
                 });
                 updateSurfaces(topChromeElements, {
