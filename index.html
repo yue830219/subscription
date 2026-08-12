@@ -3834,7 +3834,7 @@
             currentIcon = 'fa-image';
             updateIconPreview();
             
-            const defaultBg = '#252529';
+            const defaultBg = document.documentElement.classList.contains('theme-light') ? '#EBEBEB' : '#252529';
             document.getElementById('modal-sub').dataset.bgColor = defaultBg;
             document.getElementById('color-picker-btn').value = defaultBg;
             document.getElementById('color-picker-preview').style.backgroundColor = defaultBg;
