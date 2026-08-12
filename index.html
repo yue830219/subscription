@@ -84,12 +84,17 @@
         html.theme-light .text-gray-400 { color: #6b7280 !important; }
         html.theme-light .text-gray-500 { color: #64748b !important; }
         html.theme-light .bg-\[\#0f0f12\] { background-color: #f2f4f8 !important; }
+        html.theme-light .bg-\[\#0f0f12\]\/90,
+        html.theme-light .bg-\[\#0f0f12\]\/95 { background-color: rgba(242, 244, 248, .94) !important; }
         html.theme-light .bg-\[\#101014\] { background-color: #f7f8fb !important; }
         html.theme-light .bg-\[\#1a1a1e\] { background-color: #fff !important; }
         html.theme-light .bg-\[\#1e1e23\] { background-color: #fff !important; }
         html.theme-light .bg-\[\#252529\] { background-color: #ebeff5 !important; }
         html.theme-light .bg-\[\#29292e\] { background-color: #e5e9f0 !important; }
         html.theme-light .bg-\[\#303035\] { background-color: #dde3ec !important; }
+        html.theme-light .border-\[\#3a3a40\],
+        html.theme-light .border-\[\#45454d\] { border-color: #cbd5e1 !important; }
+        html.theme-light .bg-gray-600 { background-color: #cbd5e1 !important; }
         html.theme-light .hover\:bg-\[\#303035\]:hover { background-color: #dde3ec !important; }
         html.theme-light input, html.theme-light textarea, html.theme-light select { color: #111827; }
         html.theme-light input::placeholder, html.theme-light textarea::placeholder { color: #94a3b8; }
@@ -100,6 +105,14 @@
         html.theme-light .bg-accentBlue.text-white,
         html.theme-light .bg-red-500.text-white,
         html.theme-light .bg-red-600.text-white { color: #fff !important; }
+        html.theme-light .bg-accentBlue .text-white,
+        html.theme-light .bg-red-500 .text-white,
+        html.theme-light .bg-red-600 .text-white { color: #fff !important; }
+        html.theme-light #analysis-annual-card { background-color: #dff7eb !important; border-color: #a7e8c8 !important; }
+        html.theme-light #analysis-annual-card > * { color: #166534 !important; }
+        html.theme-light #analysis-category-donut { box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .06); }
+        html.theme-light #modal-app-dialog > div,
+        html.theme-light #modal-backup-method > div { box-shadow: 0 24px 60px rgba(15, 23, 42, .18); }
         body, body * {
             user-select: none;
             -webkit-user-select: none;
@@ -258,9 +271,6 @@
             <select id="filter-cycle" onchange="renderList()" aria-label="篩選週期" class="shrink-0 bg-darkCard rounded-xl px-3 py-2 text-xs text-gray-300 border border-darkBorder/50 focus:outline-none focus:ring-1 focus:ring-accentBlue"></select>
                 </div>
             </div>
-            <button id="clear-list-filters" type="button" onclick="clearListFilters()" class="hidden w-10 h-10 shrink-0 rounded-full border border-red-400/40 bg-red-500/15 text-red-400 items-center justify-center transition active:scale-95 hover:bg-red-500/25" aria-label="取消篩選" title="取消篩選">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
         </div>
 
         <div id="search-panel" class="hidden">
@@ -354,7 +364,7 @@
             </div>
         </section>
 
-        <section class="rounded-3xl p-5 border border-emerald-300/10 bg-[#173e32]">
+        <section id="analysis-annual-card" class="rounded-3xl p-5 border border-emerald-300/10 bg-[#173e32]">
             <p class="text-sm font-semibold text-emerald-100/70">年度預估總支出</p>
             <p id="analysis-annual-total" class="mt-2 text-3xl font-extrabold tracking-tight"></p>
             <p class="mt-2 text-sm text-emerald-100/65">依目前定期訂閱項目推算全年費用</p>
@@ -824,8 +834,8 @@
         </main>
     </section>
 
-    <div id="modal-manager" onclick="closeModalOnBackdrop(event, 'modal-manager')" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center hidden z-50 p-0 sm:p-4">
-        <div class="bg-darkCard w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[90vh] overflow-y-auto p-6 space-y-4 border border-darkBorder">
+    <div id="modal-manager" onclick="closeModalOnBackdrop(event, 'modal-manager')" class="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-end justify-center hidden z-50 p-0">
+        <div class="bg-darkCard w-full max-w-md rounded-t-3xl max-h-[90vh] overflow-y-auto p-6 space-y-4 border border-darkBorder shadow-2xl">
             <div class="flex justify-between items-center border-b border-darkBorder pb-3">
                 <h3 id="manager-title" class="text-lg font-bold">管理項目</h3>
                 <button onclick="closeModal('modal-manager')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
@@ -1122,14 +1132,19 @@
                 label.className = 'truncate';
                 const chevron = document.createElement('i');
                 chevron.className = 'fa-solid fa-chevron-down shrink-0 text-[10px] opacity-60';
-                button.append(label, chevron);
+                const clearFilter = document.createElement('span');
+                clearFilter.className = 'hidden shrink-0 w-5 h-5 rounded-full bg-red-500/15 text-red-400 items-center justify-center text-[11px]';
+                clearFilter.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                clearFilter.setAttribute('role', 'button');
+                clearFilter.setAttribute('aria-label', '取消此篩選');
+                button.append(label, clearFilter, chevron);
                 const menu = document.createElement('div');
                 menu.className = 'custom-select-menu fixed z-[90] hidden max-h-60 overflow-y-auto rounded-2xl border border-darkBorder bg-darkCard p-1.5 shadow-2xl';
                 wrapper.append(button, menu);
                 select.parentNode.insertBefore(wrapper, select);
                 wrapper.appendChild(select);
                 select.classList.add('hidden');
-                select._customSelect = { wrapper, button, label, menu };
+                select._customSelect = { wrapper, button, label, clearFilter, menu };
                 button.onclick = event => {
                     event.stopPropagation();
                     select.dataset.lastValidValue = select.value;
@@ -1277,6 +1292,15 @@
             if (!custom) return;
             const selected = select.options[select.selectedIndex];
             custom.label.textContent = selected?.textContent || '';
+            const isFilterSelect = ['filter-category', 'filter-payment', 'filter-cycle'].includes(select.id);
+            const hasFilter = isFilterSelect && Boolean(select.value);
+            custom.clearFilter.classList.toggle('hidden', !hasFilter);
+            custom.clearFilter.classList.toggle('flex', hasFilter);
+            custom.clearFilter.onclick = hasFilter ? event => {
+                event.preventDefault();
+                event.stopPropagation();
+                clearSingleListFilter(select.id);
+            } : null;
             custom.menu.innerHTML = Array.from(select.options).map(option => `<button type="button" data-value="${escapeHTML(option.value)}" class="w-full rounded-xl px-3 py-2.5 text-left text-sm ${option.value === select.value ? 'bg-accentBlue text-white' : 'text-gray-300 hover:bg-white/10 hover:text-white'} ${option.disabled ? 'hidden' : ''}">${escapeHTML(option.textContent)}</button>`).join('');
             custom.menu.querySelectorAll('button[data-value]').forEach(optionButton => {
                 optionButton.onclick = () => {
@@ -1318,7 +1342,9 @@
             modal.dataset.mode = isExport ? 'export' : 'import';
             document.getElementById('backup-method-title').textContent = isExport ? '選擇匯出方式' : '選擇匯入方式';
             document.getElementById('backup-method-description').textContent = isExport ? '選擇位置。' : '選擇來源。';
-            document.getElementById('backup-method-icon').innerHTML = `<i class="fa-solid ${isExport ? 'fa-arrow-up-from-bracket' : 'fa-arrow-down-to-bracket'}"></i>`;
+            const methodIcon = document.getElementById('backup-method-icon');
+            methodIcon.className = `flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${isExport ? 'bg-accentBlue/15 text-accentBlue' : 'bg-emerald-400/15 text-emerald-500'}`;
+            methodIcon.innerHTML = `<i class="fa-solid ${isExport ? 'fa-arrow-up-from-bracket' : 'fa-arrow-down-to-bracket'}"></i>`;
             document.getElementById('backup-method-local-label').textContent = isExport ? '匯出本機 JSON' : '匯入本機 JSON';
             document.getElementById('backup-method-cloud-label').textContent = isExport ? '匯出到雲端' : '從雲端匯入';
             modal.classList.remove('hidden');
@@ -2306,7 +2332,7 @@
                 const start = runningPercent;
                 runningPercent += (item.amount / categoryTotal) * 100;
                 return `${ANALYSIS_COLORS[index % ANALYSIS_COLORS.length]} ${start}% ${runningPercent}%`;
-            }).join(', ') : '#2a2a30 0 100%';
+            }).join(', ') : `${document.documentElement.classList.contains('theme-light') ? '#d1d5db' : '#2a2a30'} 0 100%`;
             document.getElementById('analysis-category-donut').style.background = `conic-gradient(${gradient})`;
             document.getElementById('analysis-category-legend').innerHTML = categoryData.length ? categoryData.map((item, index) => {
                 const percent = Math.round((item.amount / categoryTotal) * 100);
@@ -2686,7 +2712,6 @@
             const sortBy = document.getElementById('list-sort').value;
             const groupBy = document.getElementById('list-group').value;
             const comparison = getListComparison();
-            updateClearListFiltersButton();
             openSubscriptionSwipe = null;
             container.innerHTML = '';
 
@@ -2852,22 +2877,11 @@
             }
         }
 
-        function updateClearListFiltersButton() {
-            const button = document.getElementById('clear-list-filters');
-            if (!button) return;
-            const hasFilter = ['filter-category', 'filter-payment', 'filter-cycle']
-                .some(id => Boolean(document.getElementById(id)?.value));
-            button.classList.toggle('hidden', !hasFilter);
-            button.classList.toggle('flex', hasFilter);
-        }
-
-        function clearListFilters() {
-            ['filter-category', 'filter-payment', 'filter-cycle'].forEach(id => {
-                const select = document.getElementById(id);
-                if (!select) return;
-                select.value = '';
-                refreshCustomSelect(select);
-            });
+        function clearSingleListFilter(id) {
+            const select = document.getElementById(id);
+            if (!select) return;
+            select.value = '';
+            refreshCustomSelect(select);
             renderList();
         }
 
@@ -2999,7 +3013,7 @@
             grid.innerHTML = '';
 
             for (let i = 0; i < firstDay; i++) {
-                grid.appendChild(Object.assign(document.createElement('div'), { className: "h-20 bg-[#1e1e23] rounded-xl" }));
+                grid.appendChild(Object.assign(document.createElement('div'), { className: "h-20 bg-darkCard rounded-xl border border-darkBorder/50" }));
             }
 
             let monthTotalTwd = 0;
@@ -3016,7 +3030,7 @@
                 const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
                 const dayCell = document.createElement('div');
                 
-                dayCell.className = `h-20 rounded-xl p-1.5 border flex flex-col overflow-hidden transition cursor-pointer hover:border-accentBlue/70 active:scale-[0.98] ${isToday ? 'bg-accentBlue/30 border-accentBlue' : 'bg-[#29292e] border-[#3a3a40]'}`;
+                dayCell.className = `h-20 rounded-xl p-1.5 border flex flex-col overflow-hidden transition cursor-pointer hover:border-accentBlue/70 active:scale-[0.98] ${isToday ? 'bg-accentBlue/30 border-accentBlue' : 'bg-darkCardSecondary border-darkBorder'}`;
 
                 daySubs.forEach(({ sub }) => {
                     const twdAmount = convertToTwd(sub.amount, sub.currency || 'TWD');
