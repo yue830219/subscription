@@ -199,7 +199,15 @@
         .subscription-swipe-actions { position: absolute; inset: 0 .5rem 0 auto; display: flex; width: 7.5rem; align-items: center; justify-content: flex-end; gap: .5rem; }
         .subscription-swipe-action { width: 2.75rem; height: 2.75rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, .2); }
         .subscription-swipe-card { position: relative; z-index: 1; will-change: transform; }
-        .auto-hide-top-bar { visibility: visible; transition: transform 220ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease, visibility 0s linear 0s; will-change: transform, opacity; }
+        .auto-hide-top-bar {
+            visibility: visible;
+            background: transparent !important;
+            border-bottom-color: transparent !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            transition: transform 220ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease, visibility 0s linear 0s;
+            will-change: transform, opacity;
+        }
         .auto-hide-top-bar.top-bar-hidden { transform: translate3d(0, calc(-100% - env(safe-area-inset-top, 0px)), 0); opacity: 0; visibility: hidden; pointer-events: none; transition-delay: 0s, 0s, 220ms; }
         .subscription-inactive-card { filter: grayscale(.25) brightness(.72); }
         .app-switch-track { width: 3rem; height: 1.75rem; flex-shrink: 0; border-radius: 9999px; background: #4b5563; transition: background-color 200ms ease; }
@@ -443,8 +451,8 @@
             </div>
         </main>
 
-        <div class="fixed bottom-0 left-0 right-0 z-[60] bg-darkCard/95 backdrop-blur-md border-t border-darkBorder p-4">
-            <div class="max-w-md mx-auto flex gap-3">
+        <div class="fixed bottom-0 left-0 right-0 z-[60] bg-transparent px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pointer-events-none">
+            <div class="max-w-md mx-auto flex gap-3 pointer-events-auto">
                 <button type="button" onclick="editSelectedSubscription()" class="flex-1 py-3 bg-darkCardSecondary hover:bg-[#303035] text-white rounded-2xl font-bold transition"><i class="fa-solid fa-pen mr-2"></i>編輯</button>
                 <button type="button" onclick="deleteSelectedSubscription()" class="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold transition"><i class="fa-solid fa-trash mr-2"></i>刪除</button>
             </div>
@@ -466,7 +474,7 @@
     </div>
 
     <!-- 浮動新增按鈕 (FAB) -->
-    <button onclick="openAddModal()" class="fixed bottom-6 right-6 w-16 h-16 bg-accentBlue text-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-blue-600 transition active:scale-95 z-20">
+    <button onclick="openAddModal()" style="bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));" class="fixed right-6 w-16 h-16 bg-accentBlue text-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-blue-600 transition active:scale-95 z-20">
         <i class="fa-solid fa-plus"></i>
     </button>
 
@@ -2061,6 +2069,9 @@
 
         function animateOverlayIn(surface, elements = [surface]) {
             if (!surface) return;
+            surface.querySelectorAll('.auto-hide-top-bar').forEach(header => {
+                header.classList.remove('top-bar-hidden');
+            });
             const fullScreenSurfaceIds = new Set([
                 'view-subscription-detail', 'modal-sub', 'modal-settings',
                 'modal-theme-settings', 'modal-card-layout', 'modal-manager'
