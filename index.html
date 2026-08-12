@@ -116,6 +116,26 @@
             background: rgb(var(--theme-bg));
             pointer-events: none;
         }
+        /* TEMP VERSION BADGE: remove this block and #app-version-badge when requested. */
+        #app-version-badge {
+            position: fixed;
+            top: .65rem;
+            right: .65rem;
+            z-index: 30;
+            padding: .2rem .48rem;
+            border: 1px solid rgb(var(--theme-border) / .65);
+            border-radius: 9999px;
+            background: rgb(var(--theme-card) / .76);
+            color: rgb(156 163 175);
+            font-size: .62rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: .04em;
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, .16);
+            pointer-events: none;
+        }
         #floating-add-button {
             position: fixed !important;
             bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + .75rem)) !important;
@@ -310,6 +330,7 @@
 </head>
 <body class="max-w-md mx-auto min-h-screen bg-darkBg text-white relative pb-20 border-x border-darkBorder/30">
     <div id="ios-status-bar-shield" aria-hidden="true"></div>
+    <div id="app-version-badge" aria-label="目前版本"></div>
     <div id="portrait-lock-overlay" class="fixed inset-0 z-[999] flex-col items-center justify-center gap-4 bg-[#0f0f12] p-8 text-center">
         <i class="fa-solid fa-mobile-screen-button text-5xl text-accentBlue"></i>
         <p class="text-xl font-bold">請將手機轉回直向</p>
@@ -1098,6 +1119,9 @@
             }
         }
 
+        // TEMP VERSION BADGE: increment after every user-visible update; remove when requested.
+        const APP_VERSION = 'v1.0.1';
+
         const DEFAULT_CARD_LAYOUT = {
             coloredCard: true,
             showCycle: true,
@@ -1164,6 +1188,7 @@
             document.addEventListener('pointerdown', dismissSubscriptionSwipeOnOutsidePress, true);
             document.addEventListener('touchstart', dismissSubscriptionSwipeOnOutsidePress, true);
             document.addEventListener('click', consumeSubscriptionSwipeDismissClick, true);
+            document.getElementById('app-version-badge').textContent = APP_VERSION;
             applyThemePreference();
             completeThemeTransitionArrival();
             populateDropdowns();
