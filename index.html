@@ -60,26 +60,12 @@
             --theme-card: 26 26 30;
             --theme-card-secondary: 37 37 41;
             --theme-border: 42 42 48;
-            --app-status-bar-height: max(44px, env(safe-area-inset-top, 0px));
-        }
-
-        #modal-settings > .min-h-full {
-            padding-top: calc(1.5rem + var(--app-status-bar-height)) !important;
-        }
-
-        #modal-card-layout > header {
-            padding-top: calc(1rem + var(--app-status-bar-height)) !important;
-        }
-        html {
-            background-color: #0f0f12;
-            color-scheme: dark;
         }
         html.theme-light {
             --theme-bg: 242 244 248;
             --theme-card: 255 255 255;
             --theme-card-secondary: 235 238 244;
             --theme-border: 209 214 224;
-            background-color: #f2f4f8;
             color-scheme: light;
         }
         body {
@@ -2676,16 +2662,12 @@
             const preference = getThemePreference();
             const theme = resolvedTheme(preference);
             const useLight = theme === 'light';
-            const themeColor = useLight ? '#f2f4f8' : '#0f0f12';
             document.documentElement.classList.toggle('theme-light', useLight);
             document.documentElement.classList.toggle('dark', !useLight);
-            document.documentElement.style.backgroundColor = themeColor;
-            document.documentElement.style.colorScheme = useLight ? 'light' : 'dark';
-            document.body.style.backgroundColor = themeColor;
             const themeMeta = document.querySelector('meta[name="theme-color"]');
             const statusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-            if (themeMeta) themeMeta.content = themeColor;
-            if (statusMeta) statusMeta.content = 'black-translucent';
+            if (themeMeta) themeMeta.content = useLight ? '#f2f4f8' : '#0f0f12';
+            if (statusMeta) statusMeta.content = useLight ? 'default' : 'black-translucent';
             const caption = document.getElementById('theme-preference-caption');
             if (caption) caption.textContent = preference === 'auto' ? `自動・目前${useLight ? '淺色' : '深色'}` : useLight ? '淺色' : '深色';
             renderThemePreferenceOptions();
