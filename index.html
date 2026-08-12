@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#0f0f12">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="訂閱管理">
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png">
     <link rel="shortcut icon" type="image/png" href="favicon.png">
@@ -60,11 +61,16 @@
             --theme-card-secondary: 37 37 41;
             --theme-border: 42 42 48;
         }
+        html {
+            background-color: #0f0f12;
+            color-scheme: dark;
+        }
         html.theme-light {
             --theme-bg: 242 244 248;
             --theme-card: 255 255 255;
             --theme-card-secondary: 235 238 244;
             --theme-border: 209 214 224;
+            background-color: #f2f4f8;
             color-scheme: light;
         }
         body {
@@ -81,9 +87,6 @@
             border-bottom-color: transparent !important;
             -webkit-backdrop-filter: none !important;
             backdrop-filter: none !important;
-            min-height: 5.5rem;
-            padding-top: 1.25rem !important;
-            padding-bottom: 1.25rem !important;
             will-change: transform, opacity;
             transition: transform 220ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease, visibility 0s linear 0s;
         }
@@ -2664,10 +2667,16 @@
             const preference = getThemePreference();
             const theme = resolvedTheme(preference);
             const useLight = theme === 'light';
+            const themeColor = useLight ? '#f2f4f8' : '#0f0f12';
             document.documentElement.classList.toggle('theme-light', useLight);
             document.documentElement.classList.toggle('dark', !useLight);
+            document.documentElement.style.backgroundColor = themeColor;
+            document.documentElement.style.colorScheme = useLight ? 'light' : 'dark';
+            document.body.style.backgroundColor = themeColor;
             const themeMeta = document.querySelector('meta[name="theme-color"]');
-            if (themeMeta) themeMeta.content = useLight ? '#f2f4f8' : '#0f0f12';
+            const statusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+            if (themeMeta) themeMeta.content = themeColor;
+            if (statusMeta) statusMeta.content = 'black-translucent';
             const caption = document.getElementById('theme-preference-caption');
             if (caption) caption.textContent = preference === 'auto' ? `自動・目前${useLight ? '淺色' : '深色'}` : useLight ? '淺色' : '深色';
             renderThemePreferenceOptions();
