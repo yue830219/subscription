@@ -3429,9 +3429,8 @@
                 const { elements } = startPoint;
                 startPoint = null;
                 updateSurfaces(elements, {
-                    transition: 'transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease',
-                    transform: 'translate3d(0, 0, 0)',
-                    opacity: '1'
+                    transition: 'transform 180ms cubic-bezier(.2,.8,.2,1)',
+                    transform: 'translate3d(0, 0, 0)'
                 });
                 window.clearTimeout(resetTimer);
                 resetTimer = window.setTimeout(() => resetSurfaces(elements), 190);
@@ -3444,7 +3443,7 @@
                 window.clearTimeout(resetTimer);
                 resetSurfaces(back.elements);
                 updateSurfaces(back.elements, { willChange: 'transform, opacity' });
-                startPoint = { x: touch.clientX, y: touch.clientY, ...back };
+                startPoint = { x: touch.clientX, y: touch.clientY, axis: null, ...back };
             }, { passive: true, capture: true });
 
             document.addEventListener('touchmove', event => {
@@ -3452,25 +3451,31 @@
                 const touch = event.touches[0];
                 const deltaX = touch.clientX - startPoint.x;
                 const deltaY = touch.clientY - startPoint.y;
-                if (deltaX <= 0 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
-                const progress = Math.min(deltaX / window.innerWidth, 0.45);
+                if (!startPoint.axis) {
+                    if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 8) return;
+                    startPoint.axis = deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical';
+                }
+                if (startPoint.axis !== 'horizontal') return;
+                // 返回手勢成立後接管觸控，避免頁面同時上下捲動。
+                event.preventDefault();
+                if (deltaX <= 0) return;
                 updateSurfaces(startPoint.elements, {
                     transition: 'none',
                     transform: `translate3d(${Math.min(deltaX, window.innerWidth * 0.45)}px, 0, 0)`,
-                    opacity: `${1 - progress * 0.35}`
+                    opacity: '1'
                 });
-            }, { passive: true, capture: true });
+            }, { passive: false, capture: true });
 
             document.addEventListener('touchend', event => {
                 if (!startPoint || !event.changedTouches.length) return;
                 const touch = event.changedTouches[0];
                 const deltaX = touch.clientX - startPoint.x;
                 const deltaY = touch.clientY - startPoint.y;
-                const { action, elements, element } = startPoint;
+                const { action, elements, element, axis } = startPoint;
                 startPoint = null;
-                if (deltaX < 70 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+                if (axis !== 'horizontal' || deltaX < 70 || Math.abs(deltaX) <= Math.abs(deltaY)) {
                     updateSurfaces(elements, {
-                        transition: 'transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease',
+                        transition: 'transform 180ms cubic-bezier(.2,.8,.2,1)',
                         transform: 'translate3d(0, 0, 0)',
                         opacity: '1'
                     });
@@ -3478,9 +3483,9 @@
                     return;
                 }
                 updateSurfaces(elements, {
-                    transition: 'transform 210ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease',
+                    transition: 'transform 210ms cubic-bezier(.2,.8,.2,1)',
                     transform: `translate3d(${window.innerWidth}px, 0, 0)`,
-                    opacity: '0'
+                    opacity: '1'
                 });
                 resetTimer = window.setTimeout(() => {
                     resetSurfaces(elements);
