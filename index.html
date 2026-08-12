@@ -81,6 +81,7 @@
         html.theme-light select option { background-color: #fff; color: #111827; }
         html.theme-light .text-white { color: #111827 !important; }
         html.theme-light .text-gray-300 { color: #4b5563 !important; }
+        html.theme-light .text-gray-200 { color: #334155 !important; }
         html.theme-light .text-gray-400 { color: #6b7280 !important; }
         html.theme-light .text-gray-500 { color: #64748b !important; }
         html.theme-light .bg-\[\#0f0f12\] { background-color: #f2f4f8 !important; }
@@ -100,6 +101,7 @@
         html.theme-light input::placeholder, html.theme-light textarea::placeholder { color: #94a3b8; }
         html.theme-light #view-subscription-detail > div[aria-hidden="true"] { background-color: #f2f4f8 !important; }
         html.theme-light .subscription-list-card .text-white,
+        html.theme-light .card-layout-preview-card .text-white,
         html.theme-light [style*="background-color"].text-white,
         html.theme-light [style*="background-color"] > .text-white,
         html.theme-light .bg-accentBlue.text-white,
@@ -113,6 +115,8 @@
         html.theme-light #analysis-annual-card { background-color: #dff7eb !important; border-color: #a7e8c8 !important; }
         html.theme-light #analysis-annual-card > * { color: #166534 !important; }
         html.theme-light #analysis-category-donut { box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .06); }
+        html.theme-light .calendar-current-month { background-color: #e7eaf0 !important; border-color: #cbd5e1 !important; }
+        html.theme-light .calendar-outside-month { background-color: #f5f6f8 !important; border-color: #e5e7eb !important; }
         html.theme-light #modal-app-dialog > div,
         html.theme-light #modal-backup-method > div { box-shadow: 0 24px 60px rgba(15, 23, 42, .18); }
         body, body * {
@@ -182,6 +186,12 @@
         .subscription-swipe-action { width: 2.75rem; height: 2.75rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, .2); }
         .subscription-swipe-card { position: relative; z-index: 1; will-change: transform; }
         .subscription-inactive-card { filter: grayscale(.25) brightness(.72); }
+        .app-switch-track { width: 3rem; height: 1.75rem; flex-shrink: 0; border-radius: 9999px; background: #4b5563; transition: background-color 200ms ease; }
+        .app-switch-thumb { position: absolute; left: .25rem; top: .25rem; width: 1.25rem; height: 1.25rem; border-radius: 9999px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); pointer-events: none; transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
+        .peer:checked ~ .app-switch-track { background: #3b82f6; }
+        .peer:checked ~ .app-switch-thumb { transform: translateX(1.25rem); }
+        html.theme-light .app-switch-track { background: #cbd5e1; }
+        html.theme-light .peer:checked ~ .app-switch-track { background: #3b82f6; }
         .calendar-card-stack {
             position: relative;
             width: 30px;
@@ -482,8 +492,8 @@
                 <div><div class="text-sm font-bold text-white">訂閱狀態</div><div id="sub-status-caption" class="mt-1 text-xs text-gray-400">啟用中</div></div>
                 <label class="relative inline-flex cursor-pointer items-center">
                     <input type="checkbox" id="sub-is-active" class="peer sr-only" checked onchange="updateSubscriptionStatusCaption()">
-                    <span class="h-7 w-12 rounded-full bg-gray-600 transition peer-checked:bg-accentBlue"></span>
-                    <span class="pointer-events-none absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition peer-checked:translate-x-5"></span>
+                    <span class="app-switch-track"></span>
+                    <span class="app-switch-thumb"></span>
                 </label>
             </div>
 
@@ -765,8 +775,8 @@
                         <div><div id="payment-notification-title" class="text-sm font-bold text-white">付款前 7 天通知</div><div id="payment-notification-status" class="mt-1 text-xs text-gray-500">尚未開啟</div></div>
                         <label class="relative inline-flex cursor-pointer items-center">
                             <input type="checkbox" id="payment-notification-toggle" class="peer sr-only" onchange="togglePaymentNotifications(this.checked)">
-                            <span class="h-7 w-12 rounded-full bg-gray-600 transition peer-checked:bg-accentBlue"></span>
-                            <span class="pointer-events-none absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition peer-checked:translate-x-5"></span>
+                            <span class="app-switch-track"></span>
+                            <span class="app-switch-thumb"></span>
                         </label>
                     </div>
                     <div class="flex items-center justify-between gap-3 rounded-xl bg-darkCardSecondary px-3 py-2.5">
@@ -1346,8 +1356,10 @@
             document.getElementById('backup-method-title').textContent = isExport ? '選擇匯出方式' : '選擇匯入方式';
             document.getElementById('backup-method-description').textContent = isExport ? '選擇位置。' : '選擇來源。';
             const methodIcon = document.getElementById('backup-method-icon');
-            methodIcon.className = `flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm ${isExport ? 'bg-accentBlue' : 'bg-emerald-500'}`;
-            methodIcon.innerHTML = `<i class="fa-solid ${isExport ? 'fa-arrow-up-from-bracket' : 'fa-arrow-down-to-bracket'}"></i>`;
+            methodIcon.className = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-sm';
+            methodIcon.style.backgroundColor = isExport ? 'rgba(59, 130, 246, .15)' : 'rgba(16, 185, 129, .16)';
+            methodIcon.style.color = isExport ? '#2563eb' : '#059669';
+            methodIcon.innerHTML = `<i class="fa-solid ${isExport ? 'fa-file-export' : 'fa-file-import'} text-lg" aria-hidden="true"></i>`;
             document.getElementById('backup-method-local-label').textContent = isExport ? '匯出本機 JSON' : '匯入本機 JSON';
             document.getElementById('backup-method-cloud-label').textContent = isExport ? '匯出到雲端' : '從雲端匯入';
             modal.classList.remove('hidden');
@@ -2673,7 +2685,7 @@
 
         function cardLayoutToggle(key, icon, label) {
             const isEnabled = Boolean(cardLayout[key]);
-            return `<label class="flex cursor-pointer items-center justify-between gap-3 rounded-2xl px-3 py-3 hover:bg-white/5"><span class="flex min-w-0 items-center gap-3"><i class="fa-solid ${icon} w-5 text-center text-gray-300"></i><span class="text-sm font-medium">${label}</span></span><input type="checkbox" class="sr-only" ${isEnabled ? 'checked' : ''} onchange="updateCardLayout('${key}', this.checked)"><span class="relative h-7 w-12 shrink-0 rounded-full transition" style="background:${isEnabled ? '#3b82f6' : '#4b5563'}"><span class="absolute top-1 h-5 w-5 rounded-full bg-white transition" style="left:${isEnabled ? '24px' : '4px'}"></span></span></label>`;
+            return `<label class="flex cursor-pointer items-center justify-between gap-3 rounded-2xl px-3 py-3 hover:bg-white/5"><span class="flex min-w-0 items-center gap-3"><i class="fa-solid ${icon} w-5 text-center text-gray-300"></i><span class="text-sm font-medium">${label}</span></span><span class="relative inline-flex shrink-0 items-center"><input type="checkbox" class="peer sr-only" ${isEnabled ? 'checked' : ''} onchange="updateCardLayout('${key}', this.checked)"><span class="app-switch-track"></span><span class="app-switch-thumb"></span></span></label>`;
         }
 
         function renderCardLayoutSettings() {
@@ -2694,7 +2706,7 @@
                 cardLayout.showCategory ? `<span class="rounded-md bg-white/10 px-2 py-0.5 text-[10px] ${secondaryClass}">影音娛樂</span>` : '',
                 cardLayout.showPaymentMethod ? `<span class="rounded-md bg-white/10 px-2 py-0.5 text-[10px] ${secondaryClass}">Visa</span>` : ''
             ].filter(Boolean).join('');
-            document.getElementById('card-layout-preview').innerHTML = `<div class="flex min-h-[4.5rem] items-center justify-between gap-3 overflow-hidden rounded-2xl p-3.5 shadow-sm" style="background:${cardBg}"><div class="flex min-w-0 flex-1 items-center gap-3"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-xl font-black text-white">N</div><div class="min-w-0 flex-1"><div class="truncate text-base font-bold ${textClass}">Netflix</div>${previewTags ? `<div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">${previewTags}</div>` : ''}</div></div><div class="shrink-0 text-right"><div class="text-lg font-extrabold ${textClass}">${previewTwdAmount}</div>${cardLayout.showConvertedAmount ? `<div class="text-[11px] ${secondaryClass}">USD $20</div>` : ''}<div class="text-[11px] ${secondaryClass}">每月</div></div></div>`;
+            document.getElementById('card-layout-preview').innerHTML = `<div class="card-layout-preview-card flex min-h-[4.5rem] items-center justify-between gap-3 overflow-hidden rounded-2xl border border-darkBorder/40 p-3.5 shadow-sm" style="background:${cardBg}"><div class="flex min-w-0 flex-1 items-center gap-3"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-xl font-black text-white">N</div><div class="min-w-0 flex-1"><div class="truncate text-base font-bold ${textClass}">Netflix</div>${previewTags ? `<div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">${previewTags}</div>` : ''}</div></div><div class="shrink-0 text-right"><div class="text-lg font-extrabold ${textClass}">${previewTwdAmount}</div>${cardLayout.showConvertedAmount ? `<div class="text-[11px] ${secondaryClass}">USD $20</div>` : ''}<div class="text-[11px] ${secondaryClass}">每月</div></div></div>`;
 
             const secondaryOptions = [
                 ['nextDate', '下次付款日期'], ['daysUntil', '距下次付款天數'], ['notes', '說明'], ['none', '無']
@@ -3053,7 +3065,7 @@
             grid.innerHTML = '';
 
             for (let i = 0; i < firstDay; i++) {
-                grid.appendChild(Object.assign(document.createElement('div'), { className: "h-20 bg-darkCardSecondary rounded-xl border border-darkBorder/50" }));
+                grid.appendChild(Object.assign(document.createElement('div'), { className: "calendar-outside-month h-20 bg-darkCardSecondary rounded-xl border border-darkBorder/50" }));
             }
 
             let monthTotalTwd = 0;
@@ -3070,7 +3082,7 @@
                 const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
                 const dayCell = document.createElement('div');
                 
-                dayCell.className = `h-20 rounded-xl p-1.5 border flex flex-col overflow-hidden transition cursor-pointer hover:border-accentBlue/70 active:scale-[0.98] ${isToday ? 'bg-accentBlue/30 border-accentBlue' : 'bg-darkCard border-darkBorder'}`;
+                dayCell.className = `h-20 rounded-xl p-1.5 border flex flex-col overflow-hidden transition cursor-pointer hover:border-accentBlue/70 active:scale-[0.98] ${isToday ? 'bg-accentBlue/30 border-accentBlue' : 'calendar-current-month bg-darkCard border-darkBorder'}`;
 
                 daySubs.forEach(({ sub }) => {
                     const twdAmount = convertToTwd(sub.amount, sub.currency || 'TWD');
