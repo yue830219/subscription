@@ -1067,6 +1067,7 @@
             setupHeaderSwipe();
             setupPageBackgroundSwipe();
             setupEdgeBackSwipe();
+            setupTapTopToScroll();
             setupOverlayScrollLock();
             requestPortraitOrientationLock();
             if (location.protocol === 'https:' && 'serviceWorker' in navigator) {
@@ -3390,6 +3391,28 @@
                     switchView('list');
                 }
             }, { passive: true });
+        }
+
+        function setupTapTopToScroll() {
+            let topTapStart = null;
+            document.addEventListener('pointerdown', event => {
+                topTapStart = event.clientY <= 52
+                    ? { x: event.clientX, y: event.clientY, pointerId: event.pointerId, target: event.target }
+                    : null;
+            }, { passive: true, capture: true });
+            document.addEventListener('pointerup', event => {
+                if (!topTapStart || event.pointerId !== topTapStart.pointerId) return;
+                const start = topTapStart;
+                topTapStart = null;
+                if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10) return;
+                const surface = start.target.closest?.('[id^="modal-"]:not(.hidden), #view-subscription-detail:not(.hidden)');
+                if (surface && typeof surface.scrollTo === 'function') {
+                    surface.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+                } else {
+                    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+                }
+            }, { passive: true, capture: true });
+            document.addEventListener('pointercancel', () => { topTapStart = null; }, { passive: true, capture: true });
         }
 
         function setupEdgeBackSwipe() {
