@@ -155,7 +155,7 @@
             border-bottom: 1px solid rgba(255, 255, 255, .24) !important;
         }
         .account-profile-input:focus { border-bottom-color: rgba(255, 255, 255, .48) !important; }
-        .account-profile-save { background: #3a3840; color: #e5e7eb; }
+        .account-profile-save { color: #cbd5e1; }
         html.theme-light .account-profile-card {
             border-color: #e2e8f0;
             background: #ffffff;
@@ -166,7 +166,7 @@
         html.theme-light .account-profile-card .account-profile-email { color: #716b75 !important; }
         html.theme-light .account-profile-input { border-bottom-color: rgba(15, 23, 42, .16) !important; }
         html.theme-light .account-profile-input:focus { border-bottom-color: rgba(15, 23, 42, .30) !important; }
-        html.theme-light .account-profile-save { background: #e5e7eb; color: #334155 !important; }
+        html.theme-light .account-profile-save { color: #64748b !important; }
         body, body * {
             user-select: none;
             -webkit-user-select: none;
@@ -1802,7 +1802,7 @@
                             <span class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-accentBlue text-white border-2 border-darkCard flex items-center justify-center text-xs"><i class="fa-solid fa-camera"></i></span>
                             <input id="account-avatar-upload" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" onchange="handleAccountAvatarUpload(event)">
                         </label>
-                        <button type="submit" class="account-profile-save w-full rounded-xl py-2 text-sm font-bold transition active:scale-[0.98]">儲存</button>
+                        <button type="submit" class="account-profile-save py-1 text-sm font-bold transition active:scale-[0.98]">儲存</button>
                     </div>
                     <div class="min-w-0 flex-1 space-y-2">
                         <input id="subscription-account-name" name="name" type="text" maxlength="60" autocomplete="name" autocapitalize="words" placeholder="名稱" value="${escapeHTML(profile.name)}" oninput="handleAccountProfileInput()" class="account-profile-input w-full border-0 bg-transparent px-0 py-1.5 text-base font-bold text-white outline-none transition placeholder:text-gray-500">
