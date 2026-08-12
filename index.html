@@ -2572,9 +2572,11 @@
             const tabList = document.getElementById('tab-list');
             const tabCal = document.getElementById('tab-calendar');
             const analysisButton = document.getElementById('btn-view-analysis');
+            const floatingAddButton = document.getElementById('floating-add-button');
             const views = { list: listView, calendar: calView, analysis: analysisView };
             const targetView = views[view];
             if (!targetView) return;
+            floatingAddButton?.classList.toggle('hidden', view !== 'list');
             window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
             document.getElementById('app-header').classList.remove('is-hidden');
             const activeEntry = Object.entries(views).find(([, item]) => !item.classList.contains('hidden'));
