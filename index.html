@@ -3908,7 +3908,19 @@
             };
 
             const updateSurfaces = (elements, styles) => {
-                elements.forEach(element => Object.assign(element.style, styles));
+                elements.forEach(element => {
+                    const nextStyles = { ...styles };
+                    // 日曆以 -translate-x-1/2 讓寬版容器置中。互動返回時若直接
+                    // 覆寫 transform，會暫時失去這個 50% 位移而被推到右側；把
+                    // 手勢位移加在原本的置中位移上，拖曳期間也能維持正確位置。
+                    if (element.id === 'view-calendar-container' && typeof nextStyles.transform === 'string') {
+                        const offset = nextStyles.transform.match(/^translate3d\((-?[\d.]+)px, 0, 0\)$/)?.[1];
+                        if (offset !== undefined) {
+                            nextStyles.transform = `translate3d(calc(-50% + ${offset}px), 0, 0)`;
+                        }
+                    }
+                    Object.assign(element.style, nextStyles);
+                });
             };
 
             const resetSurfaces = elements => {
