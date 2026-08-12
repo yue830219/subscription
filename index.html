@@ -3190,6 +3190,21 @@
             if (!['auto', 'light', 'dark'].includes(value)) return;
             pendingThemePreference = value;
             applyThemePreference(value);
+            showThemePreviewStatusShield(value);
+        }
+
+        function showThemePreviewStatusShield(preference) {
+            const shield = document.getElementById('ios-status-bar-shield');
+            if (!shield) return;
+            shield.style.zIndex = '9999';
+            shield.style.backgroundColor = resolvedTheme(preference) === 'light' ? '#f2f4f8' : '#0f0f12';
+        }
+
+        function clearThemePreviewStatusShield() {
+            const shield = document.getElementById('ios-status-bar-shield');
+            if (!shield) return;
+            shield.style.zIndex = '';
+            shield.style.backgroundColor = '';
         }
 
         function commitThemePreference() {
@@ -3199,6 +3214,7 @@
             localStorage.setItem('app_theme_preference', value);
             pendingThemePreference = null;
             applyThemePreference(value);
+            clearThemePreviewStatusShield();
             sessionStorage.setItem('app_theme_transition', '1');
             const mainUrl = window.location.href.split(/[?#]/)[0];
             document.documentElement.classList.add('theme-transition-leaving');
@@ -3248,6 +3264,7 @@
             closeOverlaySmooth(modal, [modal], () => {
                 pendingThemePreference = null;
                 applyThemePreference();
+                clearThemePreviewStatusShield();
             });
         }
 
