@@ -96,7 +96,7 @@
             position: fixed;
             inset: 0 0 auto;
             z-index: 200;
-            height: max(env(safe-area-inset-top, 0px), 3.25rem);
+            height: 1rem;
             background: rgb(var(--theme-bg));
             pointer-events: none;
         }
@@ -4111,7 +4111,7 @@
                 const progress = horizontalOffset / window.innerWidth;
                 const travelLimit = window.innerWidth * 0.25;
                 const surfaceOffset = Math.min(horizontalOffset, travelLimit);
-                const fadeProgress = Math.max(0, Math.min(1, (progress - 0.25) / 0.75));
+                const fadeProgress = Math.max(0, Math.min(1, (progress - 0.25) / 0.27));
                 updateSurfaces(startPoint.elements, {
                     transition: 'none',
                     transform: `translate3d(${surfaceOffset}px, 0, 0)`,
