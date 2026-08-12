@@ -560,6 +560,15 @@
                 </label>
             </div>
 
+            <div class="bg-darkCardSecondary rounded-2xl p-3.5 flex items-center justify-between gap-3">
+                <div><div class="text-sm font-bold text-white">付款提醒</div><div id="sub-notification-caption" class="mt-1 text-xs text-gray-400">開啟通知</div></div>
+                <label class="relative inline-flex cursor-pointer items-center">
+                    <input type="checkbox" id="sub-notification-enabled" class="peer sr-only" checked onchange="updateSubscriptionNotificationCaption()">
+                    <span class="app-switch-track"></span>
+                    <span class="app-switch-thumb"></span>
+                </label>
+            </div>
+
             <!-- 名稱 -->
             <div class="bg-darkCardSecondary rounded-2xl p-3.5">
                 <label class="text-xs text-gray-500 block mb-1">名稱</label>
@@ -1615,7 +1624,7 @@
             today.setHours(0, 0, 0, 0);
             const paymentGroups = new Map();
             const seen = new Set();
-            subscriptions.filter(sub => sub.isActive !== false).forEach(sub => {
+            subscriptions.filter(sub => sub.isActive !== false && sub.notificationEnabled !== false).forEach(sub => {
                 for (let offset = 0; offset <= 12; offset++) {
                     const month = new Date(today.getFullYear(), today.getMonth() + offset, 1);
                     getSubscriptionOccurrencesForMonth(sub, month.getFullYear(), month.getMonth()).forEach(paymentDate => {
@@ -2423,6 +2432,11 @@
             document.getElementById('sub-status-caption').textContent = isActive ? '啟用中' : '已停用';
         }
 
+        function updateSubscriptionNotificationCaption() {
+            const isEnabled = document.getElementById('sub-notification-enabled').checked;
+            document.getElementById('sub-notification-caption').textContent = isEnabled ? '開啟通知' : '不提醒通知';
+        }
+
         function sanitizeNumericInput(input) {
             const values = input.value.replace(/[^\d.]/g, '').split('.');
             input.value = values.length > 1 ? `${values.shift()}.${values.join('')}` : values[0];
@@ -2992,6 +3006,8 @@
             document.getElementById('sub-amount').value = sub.amount ?? '';
             document.getElementById('sub-is-active').checked = sub.isActive !== false;
             updateSubscriptionStatusCaption();
+            document.getElementById('sub-notification-enabled').checked = sub.notificationEnabled !== false;
+            updateSubscriptionNotificationCaption();
             setPaymentType(sub.paymentType || 'recurring');
             if (sub.paymentType !== 'onetime') document.getElementById('sub-cycle').value = sub.cycle || '月';
             const nextDate = sub.nextDate || document.getElementById('sub-next-date').value;
@@ -4391,6 +4407,8 @@
             document.getElementById('sub-currency').value = defaultCurrency;
             document.getElementById('sub-is-active').checked = true;
             updateSubscriptionStatusCaption();
+            document.getElementById('sub-notification-enabled').checked = true;
+            updateSubscriptionNotificationCaption();
             
             document.getElementById('logo-preview').classList.add('hidden');
             currentLogoBase64 = '';
@@ -4435,6 +4453,8 @@
             document.getElementById('sub-amount').value = sub.amount;
             document.getElementById('sub-is-active').checked = sub.isActive !== false;
             updateSubscriptionStatusCaption();
+            document.getElementById('sub-notification-enabled').checked = sub.notificationEnabled !== false;
+            updateSubscriptionNotificationCaption();
             
             setPaymentType(sub.paymentType || 'recurring');
             if (sub.paymentType === 'recurring') {
@@ -4499,6 +4519,7 @@
             const category = document.getElementById('sub-category').value;
             const notes = document.getElementById('sub-notes').value;
             const isActive = document.getElementById('sub-is-active').checked;
+            const notificationEnabled = document.getElementById('sub-notification-enabled').checked;
             
             let bgColor = document.getElementById('modal-sub').dataset.bgColor || '#252529';
 
@@ -4510,12 +4531,12 @@
             if (id) {
                 const idx = subscriptions.findIndex(s => s.id === id);
                 if (idx !== -1) {
-                    subscriptions[idx] = { id, name, currency, amount, paymentType, cycle, nextDate, paymentMethod, category, notes, isActive, bgColor, logo: currentLogoBase64, icon: currentIcon };
+                    subscriptions[idx] = { id, name, currency, amount, paymentType, cycle, nextDate, paymentMethod, category, notes, isActive, notificationEnabled, bgColor, logo: currentLogoBase64, icon: currentIcon };
                 }
             } else {
                 subscriptions.push({
                     id: Date.now().toString(),
-                    name, currency, amount, paymentType, cycle, nextDate, paymentMethod, category, notes, isActive, bgColor, logo: currentLogoBase64, icon: currentIcon
+                    name, currency, amount, paymentType, cycle, nextDate, paymentMethod, category, notes, isActive, notificationEnabled, bgColor, logo: currentLogoBase64, icon: currentIcon
                 });
             }
 
