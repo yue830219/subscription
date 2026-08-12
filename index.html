@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0f0f12">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="訂閱管理">
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png">
     <link rel="shortcut icon" type="image/png" href="favicon.png">
@@ -127,7 +127,7 @@
         html.theme-light .hover\:bg-\[\#303035\]:hover { background-color: #dde3ec !important; }
         html.theme-light input, html.theme-light textarea, html.theme-light select { color: #111827; }
         html.theme-light input::placeholder, html.theme-light textarea::placeholder { color: #94a3b8; }
-        html.theme-light #view-subscription-detail { background-color: #f2f4f8 !important; }
+        html.theme-light #view-subscription-detail > div[aria-hidden="true"] { background-color: #f2f4f8 !important; }
         html.theme-light .subscription-list-card .text-white,
         html.theme-light .card-layout-preview-card .text-white,
         html.theme-light [style*="background-color"].text-white,
@@ -242,13 +242,10 @@
             box-shadow: none !important;
         }
         .manager-drag-placeholder > * { visibility: hidden; }
-        .subscription-swipe-row { position: relative; overflow: visible; border-radius: 1rem; }
+        .subscription-swipe-row { position: relative; overflow: hidden; border-radius: 1rem; }
         .subscription-swipe-actions { position: absolute; inset: 0 .5rem 0 auto; display: flex; width: 7.5rem; align-items: center; justify-content: flex-end; gap: .5rem; }
         .subscription-swipe-action { width: 2.75rem; height: 2.75rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, .2); }
         .subscription-swipe-card { position: relative; z-index: 1; will-change: transform; }
-        .notification-status-badge { position: absolute; z-index: 3; top: -.45rem; right: -.45rem; width: 1.55rem; height: 1.55rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #fff !important; border: 2px solid rgb(var(--theme-bg)); box-shadow: 0 3px 9px rgba(0, 0, 0, .28); pointer-events: none; font-size: .68rem; }
-        .notification-status-badge.is-enabled { background: #3b82f6; }
-        .notification-status-badge.is-disabled { background: #64748b; }
         .subscription-inactive-card { filter: grayscale(.25) brightness(.72); }
         .app-switch-track { width: 3rem; height: 1.75rem; flex-shrink: 0; border-radius: 9999px; background: #4b5563; transition: background-color 200ms ease; }
         .app-switch-thumb { position: absolute; left: .25rem; top: .25rem; width: 1.25rem; height: 1.25rem; border-radius: 9999px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); pointer-events: none; transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
@@ -332,7 +329,6 @@
                 <option value="category">依類別群組</option>
                 <option value="payment">依付款方式群組</option>
                 <option value="cycle">依計費週期群組</option>
-                <option value="notification">依通知狀態群組</option>
             </select>
             <select id="list-compare" onchange="saveListComparison(this.value)" aria-label="比較平均花費" class="shrink-0 bg-darkCard rounded-xl px-3 py-2 text-xs text-gray-300 border border-darkBorder/50 focus:outline-none focus:ring-1 focus:ring-accentBlue">
                 <option value="">比較</option>
@@ -452,7 +448,8 @@
     </main>
 
     <!-- 訂閱狀態詳情 -->
-    <section id="view-subscription-detail" class="fixed inset-0 z-50 isolate hidden flex-col overflow-y-auto no-scrollbar bg-darkBg pb-28" style="box-shadow:-16px 0 34px rgba(0,0,0,.3)">
+    <section id="view-subscription-detail" class="fixed inset-0 z-50 hidden flex-col overflow-y-auto no-scrollbar pb-28">
+        <div class="fixed inset-0 bg-darkBg pointer-events-none" style="z-index:-1; box-shadow:-16px 0 34px rgba(0,0,0,.3)" aria-hidden="true"></div>
         <header class="p-4 flex items-center justify-between sticky top-0 bg-darkBg/90 backdrop-blur-md z-10 border-b border-darkBorder/30">
             <button type="button" onclick="closeSubscriptionDetail()" class="w-10 h-10 rounded-full bg-darkCard flex items-center justify-center text-gray-300 hover:text-white transition" aria-label="返回列表">
                 <i class="fa-solid fa-chevron-left text-lg"></i>
@@ -1080,7 +1077,6 @@
             showCategory: false,
             showPaymentMethod: true,
             showConvertedAmount: true,
-            showNotificationBadge: true,
             secondaryInfo: 'nextDate'
         };
 
@@ -1876,7 +1872,7 @@
             }
 
             const avatar = safeImageSrc(profile.avatar);
-            const rememberedPassword = getRememberedSubscriptionSyncPassword();
+            const rememberedPassword = String(sessionStorage.getItem('subscription_sync_password') || '');
             container.innerHTML = `
                 <div class="account-profile-card rounded-[2rem] p-4 flex items-center gap-4">
                     <div class="flex w-20 shrink-0 flex-col items-center gap-3">
@@ -1901,7 +1897,7 @@
         function openAccountProfileEditor() {
             accountProfileOriginalCredentials = {
                 email: String(localStorage.getItem('subscription_sync_email') || '').trim().toLowerCase(),
-                password: getRememberedSubscriptionSyncPassword(),
+                password: String(sessionStorage.getItem('subscription_sync_password') || ''),
                 name: String(localStorage.getItem('subscription_account_name') || '').trim(),
                 avatar: safeImageSrc(localStorage.getItem('subscription_account_avatar') || '')
             };
@@ -1920,7 +1916,7 @@
             if (emailIsValid) localStorage.setItem('subscription_sync_email', getSubscriptionSyncEmail());
 
             const passwordInput = document.getElementById('subscription-sync-password');
-            if (passwordInput?.value) rememberSubscriptionSyncPassword(passwordInput.value);
+            if (passwordInput?.value) sessionStorage.setItem('subscription_sync_password', passwordInput.value);
         }
 
         async function saveAccountProfile() {
@@ -1973,7 +1969,7 @@
                 else localStorage.removeItem('subscription_account_name');
                 if (accountProfileOriginalCredentials?.avatar) localStorage.setItem('subscription_account_avatar', accountProfileOriginalCredentials.avatar);
                 else localStorage.removeItem('subscription_account_avatar');
-                rememberSubscriptionSyncPassword(originalPassword);
+                sessionStorage.setItem('subscription_sync_password', originalPassword);
                 renderAccountProfile(true);
                 await showAppAlert('帳戶資料尚未更新到雲端，請確認原帳號、原密碼與網路後再試。', '同步失敗');
                 return;
@@ -1981,7 +1977,7 @@
             closeAppLoading();
             localStorage.setItem('subscription_account_name', name.slice(0, 60));
             localStorage.setItem('subscription_sync_email', email);
-            rememberSubscriptionSyncPassword(password);
+            sessionStorage.setItem('subscription_sync_password', password);
             localStorage.setItem('subscription_account_profile_ready', 'true');
             accountProfileOriginalCredentials = { email, password };
             accountProfileEditing = false;
@@ -2033,28 +2029,8 @@
             localStorage.setItem('subscription_sync_email', getSubscriptionSyncEmail());
         }
 
-        function getRememberedSubscriptionSyncPassword() {
-            const persistentPassword = String(localStorage.getItem('subscription_sync_password') || '');
-            if (persistentPassword) return persistentPassword;
-            const previousSessionPassword = String(sessionStorage.getItem('subscription_sync_password') || '');
-            if (previousSessionPassword) rememberSubscriptionSyncPassword(previousSessionPassword);
-            return previousSessionPassword;
-        }
-
-        function rememberSubscriptionSyncPassword(password) {
-            const value = String(password || '');
-            if (value) localStorage.setItem('subscription_sync_password', value);
-            else localStorage.removeItem('subscription_sync_password');
-            sessionStorage.removeItem('subscription_sync_password');
-        }
-
-        function forgetSubscriptionSyncPassword() {
-            localStorage.removeItem('subscription_sync_password');
-            sessionStorage.removeItem('subscription_sync_password');
-        }
-
         function getSubscriptionSyncPassword() {
-            return String(document.getElementById('subscription-sync-password')?.value || document.getElementById('startup-account-password')?.value || getRememberedSubscriptionSyncPassword());
+            return String(document.getElementById('subscription-sync-password')?.value || sessionStorage.getItem('subscription_sync_password') || '');
         }
 
         function ensureSubscriptionCloudSyncReady() {
@@ -2069,7 +2045,7 @@
                 return '';
             }
             if (password.length < 10) {
-                showAppAlert('請設定至少 10 個字元的備份密碼。密碼只會儲存在這台裝置並用於本機加密，不會上傳。', '備份密碼不足');
+                showAppAlert('請設定至少 10 個字元的備份密碼。這個密碼只在本機用來加密資料，不會上傳或儲存。', '備份密碼不足');
                 return '';
             }
             if (!navigator.onLine) {
@@ -2149,7 +2125,7 @@
 
         function saveStartupAccountCredentials(email, password) {
             localStorage.setItem('subscription_sync_email', email);
-            rememberSubscriptionSyncPassword(password);
+            sessionStorage.setItem('subscription_sync_password', password);
             localStorage.setItem('subscription_cloud_login_completed', 'true');
             localStorage.removeItem('subscription_cloud_login_dismissed');
             renderAccountProfile();
@@ -2168,7 +2144,7 @@
 
         async function logoutCloudAccount() {
             if (!await showAppConfirm('登出後，這台裝置不會保留備份密碼。雲端備份不會被刪除。', '確認登出')) return;
-            forgetSubscriptionSyncPassword();
+            sessionStorage.removeItem('subscription_sync_password');
             localStorage.removeItem('subscription_cloud_login_completed');
             localStorage.setItem('subscription_cloud_login_dismissed', 'true');
             accountProfileEditing = false;
@@ -2200,7 +2176,7 @@
 
             setStartupAccountBusy(true);
             setStartupAccountMessage(registering ? '正在建立加密備份…' : '正在登入並檢查備份…');
-            rememberSubscriptionSyncPassword(password);
+            sessionStorage.setItem('subscription_sync_password', password);
             try {
                 const remote = await requestSubscriptionCloud('load', email);
                 if (registering) {
@@ -3150,7 +3126,7 @@
             const themeMeta = document.querySelector('meta[name="theme-color"]');
             const statusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
             if (themeMeta) themeMeta.content = useLight ? '#f2f4f8' : '#0f0f12';
-            if (statusMeta) statusMeta.content = useLight ? 'default' : 'black';
+            if (statusMeta) statusMeta.content = useLight ? 'default' : 'black-translucent';
             const caption = document.getElementById('theme-preference-caption');
             if (caption) caption.textContent = preference === 'auto' ? `自動・目前${useLight ? '淺色' : '深色'}` : useLight ? '淺色' : '深色';
             renderThemePreferenceOptions();
@@ -3231,8 +3207,7 @@
                 cardLayout.showCategory ? `<span class="rounded-md bg-white/10 px-2 py-0.5 text-[10px] ${secondaryClass}">影音娛樂</span>` : '',
                 cardLayout.showPaymentMethod ? `<span class="rounded-md bg-white/10 px-2 py-0.5 text-[10px] ${secondaryClass}">Visa</span>` : ''
             ].filter(Boolean).join('');
-            const previewNotificationBadge = cardLayout.showNotificationBadge ? '<span class="notification-status-badge is-enabled"><i class="fa-solid fa-bell"></i></span>' : '';
-            document.getElementById('card-layout-preview').innerHTML = `<div class="card-layout-preview-card relative flex min-h-[4.5rem] items-center justify-between gap-3 overflow-visible rounded-2xl border border-darkBorder/40 p-3.5 shadow-sm" style="background:${cardBg}">${previewNotificationBadge}<div class="flex min-w-0 flex-1 items-center gap-3"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-xl font-black text-white">N</div><div class="min-w-0 flex-1"><div class="truncate text-base font-bold ${textClass}">Netflix</div>${previewTags ? `<div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">${previewTags}</div>` : ''}</div></div><div class="shrink-0 text-right"><div class="text-lg font-extrabold ${textClass}">${previewTwdAmount}</div>${cardLayout.showConvertedAmount ? `<div class="text-[11px] ${secondaryClass}">USD $20</div>` : ''}<div class="text-[11px] ${secondaryClass}">每月</div></div></div>`;
+            document.getElementById('card-layout-preview').innerHTML = `<div class="card-layout-preview-card flex min-h-[4.5rem] items-center justify-between gap-3 overflow-hidden rounded-2xl border border-darkBorder/40 p-3.5 shadow-sm" style="background:${cardBg}"><div class="flex min-w-0 flex-1 items-center gap-3"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-xl font-black text-white">N</div><div class="min-w-0 flex-1"><div class="truncate text-base font-bold ${textClass}">Netflix</div>${previewTags ? `<div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">${previewTags}</div>` : ''}</div></div><div class="shrink-0 text-right"><div class="text-lg font-extrabold ${textClass}">${previewTwdAmount}</div>${cardLayout.showConvertedAmount ? `<div class="text-[11px] ${secondaryClass}">USD $20</div>` : ''}<div class="text-[11px] ${secondaryClass}">每月</div></div></div>`;
 
             const secondaryOptions = [
                 ['nextDate', '下次付款日期'], ['daysUntil', '距下次付款天數'], ['notes', '說明'], ['none', '無']
@@ -3242,8 +3217,7 @@
                 cardLayoutToggle('showCycle', 'fa-rotate', '計費週期'),
                 cardLayoutToggle('showCategory', 'fa-shapes', '類別'),
                 cardLayoutToggle('showPaymentMethod', 'fa-credit-card', '付款方式'),
-                cardLayoutToggle('showConvertedAmount', 'fa-money-bill-transfer', '換算前價格'),
-                cardLayoutToggle('showNotificationBadge', 'fa-bell', '通知狀態鈴鐺')
+                cardLayoutToggle('showConvertedAmount', 'fa-money-bill-transfer', '換算前價格')
             ].join('<div class="mx-3 border-t border-darkBorder/70"></div>') + `<div class="mx-3 border-t border-darkBorder/70"></div><div class="px-3 py-3"><p class="mb-2 text-xs text-gray-400">標題下方資訊</p><div class="overflow-hidden rounded-xl bg-darkBg">${secondaryOptions.map(([value, label]) => `<button type="button" onclick="updateCardLayout('secondaryInfo', '${value}')" class="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm hover:bg-white/5">${label}${cardLayout.secondaryInfo === value ? '<i class="fa-solid fa-check text-accentBlue"></i>' : ''}</button>`).join('')}</div></div>`;
         }
 
@@ -3315,7 +3289,6 @@
                 if (groupBy === 'category') return sub.category || '未分類';
                 if (groupBy === 'payment') return sub.paymentMethod || '未設定';
                 if (groupBy === 'cycle') return sub.paymentType === 'onetime' ? '一次性付款' : (sub.cycle || '月');
-                if (groupBy === 'notification') return sub.notificationEnabled === false ? '通知已關閉' : '通知已開啟';
                 return '';
             };
             if (groupBy === 'upcoming') {
@@ -3333,17 +3306,10 @@
                     grouped[groupKey].push(sub);
                 });
             } else if (showGroups) {
-                if (groupBy === 'notification') {
-                    grouped['通知已開啟'] = [];
-                    grouped['通知已關閉'] = [];
-                }
                 activeSubscriptions.forEach(sub => {
                     const groupName = getGroupName(sub);
                     if (!grouped[groupName]) grouped[groupName] = [];
                     grouped[groupName].push(sub);
-                });
-                Object.keys(grouped).forEach(groupName => {
-                    if (!grouped[groupName].length) delete grouped[groupName];
                 });
             } else if (activeSubscriptions.length) {
                 if (sortBy === 'remaining-asc') {
@@ -3414,7 +3380,7 @@
                         <button type="button" onclick="toggleSubscriptionStatus('${escapeHTML(sub.id)}')" class="subscription-swipe-action bg-slate-500 hover:bg-slate-400" aria-label="${isActive ? '停用' : '啟用'} ${escapeHTML(sub.name)}"><i class="fa-solid ${isActive ? 'fa-toggle-on' : 'fa-toggle-off'} text-lg"></i></button>
                         <button type="button" onclick="quickDeleteSubscription('${escapeHTML(sub.id)}')" class="subscription-swipe-action bg-red-500 hover:bg-red-600" aria-label="刪除 ${escapeHTML(sub.name)}"><i class="fa-solid fa-trash text-base"></i></button>`;
                     const itemCard = document.createElement('div');
-                    itemCard.className = `subscription-swipe-card subscription-list-card min-h-[4.5rem] p-3.5 rounded-2xl flex items-center justify-between gap-1 shadow-sm relative overflow-visible group cursor-pointer transition-transform duration-200 ease-out active:scale-[0.99] ${isActive ? '' : 'subscription-inactive-card'}`;
+                    itemCard.className = `subscription-swipe-card subscription-list-card min-h-[4.5rem] p-3.5 rounded-2xl flex items-center justify-between gap-1 shadow-sm relative overflow-hidden group cursor-pointer transition-transform duration-200 ease-out active:scale-[0.99] ${isActive ? '' : 'subscription-inactive-card'}`;
                     itemCard.style.backgroundColor = cardBgColor;
                     setupSubscriptionCardPress(itemCard, sub.id);
                     setupSubscriptionCardSwipe(swipeRow, itemCard);
@@ -3443,13 +3409,8 @@
                         cardLayout.showPaymentMethod ? `<span class="max-w-full break-words text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-black/10 ${secTxtClass}"><i class="fa-regular fa-credit-card mr-1"></i>${escapeHTML(sub.paymentMethod || '未設定')}</span>` : ''
                     ].filter(Boolean);
                     const metadataHtml = metadata.length ? `<div class="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 mt-1">${metadata.join('')}</div>` : '';
-                    const notificationEnabled = sub.notificationEnabled !== false;
-                    const notificationBadge = cardLayout.showNotificationBadge
-                        ? `<span class="notification-status-badge ${notificationEnabled ? 'is-enabled' : 'is-disabled'}"><i class="fa-solid ${notificationEnabled ? 'fa-bell' : 'fa-bell-slash'}"></i></span>`
-                        : '';
 
                     itemCard.innerHTML = `
-                        ${notificationBadge}
                         <div class="min-w-0 flex flex-1 items-center space-x-2">
                             ${logoHtml}
                             <div class="min-w-0 flex-1 py-0.5">
