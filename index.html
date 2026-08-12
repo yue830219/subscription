@@ -4017,10 +4017,12 @@
                     transform: 'translate3d(0, 0, 0)'
                 });
                 resetTimer = window.setTimeout(() => {
-                    resetSurfaces(elements);
-                    resetSurfaces(backgroundElements);
                     element.dataset.skipCloseAnimation = 'true';
                     action();
+                    // 先讓前景關閉，再還原背景的行內 transform。否則日曆會在
+                    // 最後一幀先跳回原始置中規則、下一幀才露出，造成回彈感。
+                    resetSurfaces(elements);
+                    resetSurfaces(backgroundElements);
                 }, 210);
             }, { passive: true, capture: true });
             document.addEventListener('touchcancel', cancelEdgeSwipe, { passive: true, capture: true });
