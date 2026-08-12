@@ -92,6 +92,19 @@
             pointer-events: none;
             transition-delay: 0s, 0s, 220ms;
         }
+        #floating-add-button {
+            position: fixed !important;
+            bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + .75rem)) !important;
+            transform: translate3d(0, 0, 0);
+            -webkit-transform: translate3d(0, 0, 0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            will-change: transform;
+        }
+        #floating-add-button:active {
+            transform: translate3d(0, 0, 0) scale(.95);
+            -webkit-transform: translate3d(0, 0, 0) scale(.95);
+        }
         html.theme-light select { color-scheme: light; }
         html.theme-light select option { background-color: #fff; color: #111827; }
         html.theme-light .text-white { color: #111827 !important; }
@@ -500,7 +513,7 @@
     </div>
 
     <!-- 浮動新增按鈕 (FAB) -->
-    <button onclick="openAddModal()" class="fixed bottom-6 right-6 w-16 h-16 bg-accentBlue text-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-blue-600 transition active:scale-95 z-20">
+    <button id="floating-add-button" onclick="openAddModal()" class="right-6 w-16 h-16 bg-accentBlue text-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-blue-600 transition z-20">
         <i class="fa-solid fa-plus"></i>
     </button>
 
