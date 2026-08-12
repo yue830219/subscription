@@ -2063,8 +2063,20 @@
 
         let viewTransitionTimer = null;
 
+        function resetNewScreenToTop(surface) {
+            if (!surface) return;
+            const fullScreenSurfaceIds = new Set([
+                'view-subscription-detail', 'modal-sub', 'modal-settings',
+                'modal-theme-settings', 'modal-card-layout', 'modal-manager'
+            ]);
+            if (!fullScreenSurfaceIds.has(surface.id)) return;
+            surface.scrollTop = 0;
+            requestAnimationFrame(() => { surface.scrollTop = 0; });
+        }
+
         function animateOverlayIn(surface, elements = [surface]) {
             if (!surface) return;
+            resetNewScreenToTop(surface);
             elements.forEach(element => {
                 element.style.willChange = 'transform, opacity';
                 element.style.transition = 'none';
@@ -2160,6 +2172,7 @@
             const views = { list: listView, calendar: calView, analysis: analysisView };
             const targetView = views[view];
             if (!targetView) return;
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
             document.getElementById('app-header').classList.remove('is-hidden');
             const activeEntry = Object.entries(views).find(([, item]) => !item.classList.contains('hidden'));
             const activeView = activeEntry?.[1];
@@ -3355,7 +3368,7 @@
 
                     if (!listVisible && !calendarVisible) {
                         header.classList.remove('is-hidden');
-                    } else if (scrollY <= 8 || delta < -4) {
+                    } else if (scrollY <= 8) {
                         header.classList.remove('is-hidden');
                     } else if (scrollY > 56 && delta > 4) {
                         header.classList.add('is-hidden');
