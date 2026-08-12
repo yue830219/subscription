@@ -74,11 +74,18 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #0f0f12;
             color: #ffffff;
+            padding-top: env(safe-area-inset-top, 0px);
             -webkit-tap-highlight-color: transparent;
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
         html.theme-light body { background-color: #f2f4f8; color: #111827; }
+        #view-subscription-detail,
+        #modal-sub,
+        #modal-settings,
+        #modal-theme-settings,
+        #modal-card-layout,
+        #modal-manager { padding-top: env(safe-area-inset-top, 0px); }
         html.theme-light select { color-scheme: light; }
         html.theme-light select option { background-color: #fff; color: #111827; }
         html.theme-light .text-white { color: #111827 !important; }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'subscription-manager-v42';
+const CACHE_NAME = 'subscription-manager-v43';
 const APP_ASSETS = [
   './index.html',
   './manifest-subscription.json',
