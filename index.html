@@ -2,7 +2,7 @@
 <html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0f0f12">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2635,23 +2635,14 @@
             const themeColor = useLight ? '#f2f4f8' : '#0f0f12';
             document.documentElement.classList.toggle('theme-light', useLight);
             document.documentElement.classList.toggle('dark', !useLight);
-            document.documentElement.style.backgroundColor = themeColor;
-            document.documentElement.style.colorScheme = useLight ? 'light' : 'dark';
-            document.body.style.backgroundColor = themeColor;
-
-            // iOS PWA 常忽略既有 meta 的 content 變更；重新建立節點以要求 WebKit 即時刷新狀態列。
-            const replaceMeta = (name, content) => {
-                document.querySelectorAll(`meta[name="${name}"]`).forEach(meta => meta.remove());
-                const meta = document.createElement('meta');
-                meta.name = name;
-                meta.content = content;
-                document.head.appendChild(meta);
-            };
-            replaceMeta('theme-color', themeColor);
-            replaceMeta('apple-mobile-web-app-status-bar-style', useLight ? 'default' : 'black-translucent');
-            // 強制產生一個新繪製幀，避免狀態列停留在切換前的合成圖層。
-            void document.documentElement.offsetHeight;
-            requestAnimationFrame(() => document.documentElement.style.backgroundColor = themeColor);
+            document.documentElement.style.removeProperty('background-color');
+            document.documentElement.style.removeProperty('color-scheme');
+            document.body.style.removeProperty('background-color');
+            const themeMeta = document.querySelector('meta[name="theme-color"]');
+            const statusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+            if (themeMeta) themeMeta.content = themeColor;
+            // 比照 Gym：固定使用透明狀態列，底色直接由目前頁面主題提供。
+            if (statusMeta) statusMeta.content = 'black-translucent';
             const caption = document.getElementById('theme-preference-caption');
             if (caption) caption.textContent = preference === 'auto' ? `自動・目前${useLight ? '淺色' : '深色'}` : useLight ? '淺色' : '深色';
             renderThemePreferenceOptions();
