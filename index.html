@@ -1139,7 +1139,7 @@
         }
 
         // TEMP VERSION BADGE: increment after every user-visible update; remove when requested.
-        const APP_VERSION = 'v1.0.3';
+        const APP_VERSION = 'v1.0.4';
 
         const DEFAULT_CARD_LAYOUT = {
             coloredCard: true,
@@ -3238,10 +3238,11 @@
             const sequence = ++themePreviewTransitionSequence;
             pendingThemePreference = value;
             renderThemePreferenceOptions();
-            showThemePreviewStatusShield(value);
+            clearThemePreviewStatusShield();
             const overlay = document.getElementById('theme-preview-transition-overlay');
             if (!overlay) {
                 applyThemePreference(value);
+                showThemePreviewStatusShield(value);
                 return;
             }
             const currentUseLight = document.documentElement.classList.contains('theme-light');
@@ -3256,6 +3257,7 @@
                 if (sequence !== themePreviewTransitionSequence) return;
                 applyThemePreference(value);
                 overlay.style.backgroundColor = resolvedTheme(value) === 'light' ? '#f2f4f8' : '#0f0f12';
+                showThemePreviewStatusShield(value);
                 themePreviewAnimation = overlay.animate(
                     [{ opacity: 1 }, { opacity: 0 }],
                     { duration: 300, easing: 'ease-in-out', fill: 'forwards' }
