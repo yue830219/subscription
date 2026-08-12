@@ -906,7 +906,7 @@
         <header class="sticky top-0 z-10 flex items-center justify-between border-b border-darkBorder/60 bg-darkBg/95 px-4 py-4 backdrop-blur-md">
             <button type="button" onclick="closeThemeSettingsModal()" class="w-10 text-left text-accentBlue" aria-label="返回設定"><i class="fa-solid fa-chevron-left text-lg"></i></button>
             <h2 class="text-lg font-bold">佈景主題</h2>
-            <span class="w-10"></span>
+            <button type="button" onclick="commitThemePreference()" class="w-10 text-right text-sm font-bold text-accentBlue" aria-label="儲存佈景主題">儲存</button>
         </header>
         <main class="mx-auto w-full max-w-md p-4">
             <div id="theme-preference-options" class="rounded-3xl border border-darkBorder/60 bg-darkCard p-2"></div>
@@ -1114,6 +1114,7 @@
         let cardLayout = loadCardLayout();
 
         let currentLogoBase64 = '';
+        let pendingThemePreference = null;
         let currentIcon = 'fa-image';
         let currentCalDate = new Date();
         let managerType = ''; 
@@ -3168,29 +3169,42 @@
             }
         }
 
-        function saveThemePreference(value) {
+        function selectThemePreference(value) {
             if (!['auto', 'light', 'dark'].includes(value)) return;
+            pendingThemePreference = value;
+            renderThemePreferenceOptions();
+        }
+
+        function commitThemePreference() {
+            const value = ['auto', 'light', 'dark'].includes(pendingThemePreference)
+                ? pendingThemePreference
+                : getThemePreference();
             localStorage.setItem('app_theme_preference', value);
-            applyThemePreference();
+            pendingThemePreference = null;
+            const mainUrl = window.location.href.split(/[?#]/)[0];
+            window.location.replace(mainUrl);
         }
 
         function renderThemePreferenceOptions() {
             const container = document.getElementById('theme-preference-options');
             if (!container) return;
-            const selected = getThemePreference();
+            const selected = ['auto', 'light', 'dark'].includes(pendingThemePreference)
+                ? pendingThemePreference
+                : getThemePreference();
             const options = [
                 ['auto', 'fa-clock', '自動', '依早晚時間切換'],
                 ['light', 'fa-sun', '淺色', '明亮背景與深色文字'],
                 ['dark', 'fa-moon', '深色', '維持目前深色佈景']
             ];
             container.innerHTML = options.map(([value, icon, label, description]) => `
-                <button type="button" onclick="saveThemePreference('${value}')" class="w-full flex items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-darkCardSecondary ${selected === value ? 'bg-darkCardSecondary' : ''}">
+                <button type="button" onclick="selectThemePreference('${value}')" class="w-full flex items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-darkCardSecondary ${selected === value ? 'bg-darkCardSecondary' : ''}">
                     <span class="flex min-w-0 items-center gap-3"><span class="w-10 h-10 shrink-0 rounded-xl bg-accentBlue/15 text-accentBlue flex items-center justify-center"><i class="fa-solid ${icon}"></i></span><span><span class="block text-sm font-bold">${label}</span><span class="mt-0.5 block text-xs text-gray-400">${description}</span></span></span>
                     <span class="w-6 h-6 rounded-full border-2 flex items-center justify-center ${selected === value ? 'border-accentBlue bg-accentBlue text-white' : 'border-gray-500'}">${selected === value ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}</span>
                 </button>`).join('');
         }
 
         function openThemeSettingsModal() {
+            pendingThemePreference = getThemePreference();
             renderThemePreferenceOptions();
             const modal = document.getElementById('modal-theme-settings');
             modal.classList.remove('hidden');
@@ -3200,6 +3214,7 @@
         }
 
         function closeThemeSettingsModal() {
+            pendingThemePreference = null;
             closeOverlaySmooth(document.getElementById('modal-theme-settings'));
         }
 
