@@ -116,6 +116,15 @@
             background: rgb(var(--theme-bg));
             pointer-events: none;
         }
+        #theme-preview-status-shield {
+            position: fixed;
+            inset: 0 0 auto;
+            z-index: 9999;
+            display: none;
+            height: 0.4rem;
+            pointer-events: none;
+        }
+        #theme-preview-status-shield.is-active { display: block; }
         /* TEMP VERSION BADGE: remove this block and #app-version-badge when requested. */
         #app-version-badge {
             position: fixed;
@@ -330,6 +339,7 @@
 </head>
 <body class="max-w-md mx-auto min-h-screen bg-darkBg text-white relative pb-20 border-x border-darkBorder/30">
     <div id="ios-status-bar-shield" aria-hidden="true"></div>
+    <div id="theme-preview-status-shield" aria-hidden="true"></div>
     <div id="app-version-badge" aria-label="目前版本"></div>
     <div id="portrait-lock-overlay" class="fixed inset-0 z-[999] flex-col items-center justify-center gap-4 bg-[#0f0f12] p-8 text-center">
         <i class="fa-solid fa-mobile-screen-button text-5xl text-accentBlue"></i>
@@ -1120,7 +1130,7 @@
         }
 
         // TEMP VERSION BADGE: increment after every user-visible update; remove when requested.
-        const APP_VERSION = 'v1.0.1';
+        const APP_VERSION = 'v1.0.2';
 
         const DEFAULT_CARD_LAYOUT = {
             coloredCard: true,
@@ -3219,16 +3229,16 @@
         }
 
         function showThemePreviewStatusShield(preference) {
-            const shield = document.getElementById('ios-status-bar-shield');
+            const shield = document.getElementById('theme-preview-status-shield');
             if (!shield) return;
-            shield.style.zIndex = '9999';
             shield.style.backgroundColor = resolvedTheme(preference) === 'light' ? '#f2f4f8' : '#0f0f12';
+            shield.classList.add('is-active');
         }
 
         function clearThemePreviewStatusShield() {
-            const shield = document.getElementById('ios-status-bar-shield');
+            const shield = document.getElementById('theme-preview-status-shield');
             if (!shield) return;
-            shield.style.zIndex = '';
+            shield.classList.remove('is-active');
             shield.style.backgroundColor = '';
         }
 
