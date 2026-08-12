@@ -325,7 +325,6 @@
                 <option value="category">類別</option>
                 <option value="payment">付款方式</option>
                 <option value="cycle">週期</option>
-                <option value="notification">依通知狀態</option>
             </select>
             <select id="list-group" onchange="renderList()" aria-label="群組方式" class="shrink-0 bg-darkCard rounded-xl px-3 py-2 text-xs text-gray-300 border border-darkBorder/50 focus:outline-none focus:ring-1 focus:ring-accentBlue">
                 <option value="upcoming" selected>即將到來</option>
@@ -333,6 +332,7 @@
                 <option value="category">依類別群組</option>
                 <option value="payment">依付款方式群組</option>
                 <option value="cycle">依計費週期群組</option>
+                <option value="notification">依通知狀態</option>
             </select>
             <select id="list-compare" onchange="saveListComparison(this.value)" aria-label="比較平均花費" class="shrink-0 bg-darkCard rounded-xl px-3 py-2 text-xs text-gray-300 border border-darkBorder/50 focus:outline-none focus:ring-1 focus:ring-accentBlue">
                 <option value="">比較</option>
@@ -3305,7 +3305,6 @@
                     if (sortBy === 'category') return compareText(a.category, b.category) || compareText(a.name, b.name);
                     if (sortBy === 'payment') return compareText(a.paymentMethod, b.paymentMethod) || compareText(a.name, b.name);
                     if (sortBy === 'cycle') return compareText(a.paymentType === 'onetime' ? '一次性' : a.cycle, b.paymentType === 'onetime' ? '一次性' : b.cycle) || compareText(a.name, b.name);
-                    if (sortBy === 'notification') return Number(a.notificationEnabled === false) - Number(b.notificationEnabled === false) || compareText(a.name, b.name);
                     const difference = (getNextPaymentDate(a)?.getTime() || Infinity) - (getNextPaymentDate(b)?.getTime() || Infinity);
                     return sortBy === 'remaining-desc' ? -difference : difference;
                 });
@@ -3317,6 +3316,7 @@
                 if (groupBy === 'category') return sub.category || '未分類';
                 if (groupBy === 'payment') return sub.paymentMethod || '未設定';
                 if (groupBy === 'cycle') return sub.paymentType === 'onetime' ? '一次性付款' : (sub.cycle || '月');
+                if (groupBy === 'notification') return sub.notificationEnabled === false ? '通知已關閉' : '通知已開啟';
                 return '';
             };
             if (groupBy === 'upcoming') {
@@ -3334,10 +3334,17 @@
                     grouped[groupKey].push(sub);
                 });
             } else if (showGroups) {
+                if (groupBy === 'notification') {
+                    grouped['通知已開啟'] = [];
+                    grouped['通知已關閉'] = [];
+                }
                 activeSubscriptions.forEach(sub => {
                     const groupName = getGroupName(sub);
                     if (!grouped[groupName]) grouped[groupName] = [];
                     grouped[groupName].push(sub);
+                });
+                Object.keys(grouped).forEach(groupName => {
+                    if (!grouped[groupName].length) delete grouped[groupName];
                 });
             } else if (activeSubscriptions.length) {
                 if (sortBy === 'remaining-asc') {
