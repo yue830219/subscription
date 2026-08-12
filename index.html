@@ -1750,6 +1750,7 @@
         }
 
         let accountProfileEditing = false;
+        let accountProfileOriginalCredentials = null;
 
         function getAccountProfile() {
             return {
@@ -1842,6 +1843,12 @@
         }
 
         function openAccountProfileEditor() {
+            accountProfileOriginalCredentials = {
+                email: String(localStorage.getItem('subscription_sync_email') || '').trim().toLowerCase(),
+                password: String(sessionStorage.getItem('subscription_sync_password') || ''),
+                name: String(localStorage.getItem('subscription_account_name') || '').trim(),
+                avatar: safeImageSrc(localStorage.getItem('subscription_account_avatar') || '')
+            };
             accountProfileEditing = true;
             renderAccountProfile(true);
             requestAnimationFrame(() => document.getElementById('subscription-account-name')?.focus());
@@ -1881,20 +1888,46 @@
                 showAppAlert('請先登入或註冊雲端帳戶。', '尚未登入');
                 return;
             }
-            sessionStorage.setItem('subscription_sync_password', password);
-            showAppLoading('正在以新的帳號資料加密並同步雲端備份，請稍後…');
+            const originalEmail = accountProfileOriginalCredentials?.email || email;
+            const originalPassword = accountProfileOriginalCredentials?.password || password;
+            if (!originalEmail || originalPassword.length < 10) {
+                showAppAlert('請先重新登入，再修改帳戶資料。', '需要重新登入');
+                return;
+            }
+            if (!navigator.onLine) {
+                showAppAlert('目前沒有網路連線，請恢復連線後再試。', '無法同步');
+                return;
+            }
+            showAppLoading('正在更新帳戶與備份密碼，請稍後…');
             try {
-                await requestSubscriptionCloud('sync', email, getSubscriptionCloudPayload(email));
+                const cloudData = await requestSubscriptionCloudWithPassword('load', originalEmail, originalPassword);
+                if (!cloudData.found_user) throw new Error('missing-cloud-backup');
+                const updatedCloudData = {
+                    ...cloudData,
+                    sync_user_id: email,
+                    accountProfile: { name: name.slice(0, 60), avatar: getAccountProfileBackup().avatar },
+                    exportedAt: new Date().toISOString()
+                };
+                await requestSubscriptionCloudWithPassword('sync', email, password, updatedCloudData);
             } catch (error) {
                 console.error('帳戶資料同步失敗。', error);
                 closeAppLoading();
-                await showAppAlert('帳戶資料尚未儲存到雲端，請確認網路後再試。', '同步失敗');
+                localStorage.setItem('subscription_sync_email', originalEmail);
+                if (accountProfileOriginalCredentials?.name) localStorage.setItem('subscription_account_name', accountProfileOriginalCredentials.name);
+                else localStorage.removeItem('subscription_account_name');
+                if (accountProfileOriginalCredentials?.avatar) localStorage.setItem('subscription_account_avatar', accountProfileOriginalCredentials.avatar);
+                else localStorage.removeItem('subscription_account_avatar');
+                sessionStorage.setItem('subscription_sync_password', originalPassword);
+                renderAccountProfile(true);
+                await showAppAlert('帳戶資料尚未更新到雲端，請確認原帳號、原密碼與網路後再試。', '同步失敗');
                 return;
             }
             closeAppLoading();
             localStorage.setItem('subscription_account_name', name.slice(0, 60));
             localStorage.setItem('subscription_sync_email', email);
+            sessionStorage.setItem('subscription_sync_password', password);
             localStorage.setItem('subscription_account_profile_ready', 'true');
+            accountProfileOriginalCredentials = { email, password };
             accountProfileEditing = false;
             renderAccountProfile();
             await showAppAlert('帳戶資料與加密雲端備份已更新。', '儲存完成');
@@ -2190,8 +2223,8 @@
             }
         }
 
-        async function requestSubscriptionCloud(action, email, payload) {
-            const credentials = await getCloudBackupCredentials(email, getSubscriptionSyncPassword());
+        async function requestSubscriptionCloudWithPassword(action, email, password, payload) {
+            const credentials = await getCloudBackupCredentials(email, password);
             const body = { action, id: credentials.id };
             if (payload) body.record = await encryptCloudBackup(payload, credentials.encryptionKey);
             const response = await fetch(CLOUD_BACKUP_WORKER_URL, {
@@ -2205,6 +2238,10 @@
             if (!result || result.status === 'error') throw new Error(result?.message || '雲端服務回傳格式錯誤。');
             if (action === 'load' && result.found_user) return { status: 'ok', found_user: true, ...await decryptCloudBackup(result.record, credentials.encryptionKey) };
             return result;
+        }
+
+        async function requestSubscriptionCloud(action, email, payload) {
+            return requestSubscriptionCloudWithPassword(action, email, getSubscriptionSyncPassword(), payload);
         }
 
         function hasSubscriptionCloudData(data) {
