@@ -1613,7 +1613,7 @@
             const [notificationHour, notificationMinute] = getPaymentNotificationTime().split(':').map(Number);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            const reminders = [];
+            const paymentGroups = new Map();
             const seen = new Set();
             subscriptions.filter(sub => sub.isActive !== false).forEach(sub => {
                 for (let offset = 0; offset <= 12; offset++) {
@@ -1626,16 +1626,43 @@
                         const notifyAt = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), paymentDate.getDate() - notificationDays, notificationHour, notificationMinute, 0);
                         const daysAway = Math.round((paymentDate.getTime() - today.getTime()) / 86400000);
                         if (daysAway < 0 || (notifyAt.getTime() <= now && daysAway > notificationDays)) return;
-                        reminders.push({
-                            id,
-                            scheduledAt: Math.max(notifyAt.getTime(), now + 5000),
-                            title: `${sub.name || '訂閱'} 即將付款`,
-                            body: `${formatDisplayDate(paymentKey)} 將付款 ${subscriptionAmountDetail(sub)}`,
-                            tag: `subscription-${id}`,
-                            url: new URL(`./?subscription=${encodeURIComponent(sub.id)}`, location.href).href
-                        });
+                        if (!paymentGroups.has(paymentKey)) {
+                            paymentGroups.set(paymentKey, {
+                                paymentKey,
+                                scheduledAt: Math.max(notifyAt.getTime(), now + 5000),
+                                subscriptions: []
+                            });
+                        }
+                        paymentGroups.get(paymentKey).subscriptions.push(sub);
                     });
                 }
+            });
+            const reminders = Array.from(paymentGroups.values()).map(group => {
+                const convertedAmounts = group.subscriptions.map(sub => convertToTwd(sub.amount, sub.currency || 'TWD'));
+                const hasMissingRate = convertedAmounts.some(amount => amount === null);
+                const total = convertedAmounts.reduce((sum, amount) => sum + (amount || 0), 0);
+                const count = group.subscriptions.length;
+                if (count === 1) {
+                    const sub = group.subscriptions[0];
+                    return {
+                        id: `${sub.id}-${group.paymentKey}`,
+                        scheduledAt: group.scheduledAt,
+                        title: `${sub.name || '訂閱'} 即將付款`,
+                        body: `${formatDisplayDate(group.paymentKey)} 將付款 ${subscriptionAmountDetail(sub)}`,
+                        tag: `subscription-${sub.id}-${group.paymentKey}`,
+                        url: new URL(`./?subscription=${encodeURIComponent(sub.id)}`, location.href).href
+                    };
+                }
+                return {
+                    id: `payments-${group.paymentKey}`,
+                    scheduledAt: group.scheduledAt,
+                    title: `${count} 筆訂閱即將扣款`,
+                    body: hasMissingRate
+                        ? `${formatDisplayDate(group.paymentKey)} 共 ${count} 筆，總額待匯率更新`
+                        : `${formatDisplayDate(group.paymentKey)} 共計 TWD ${formatTwdAmount(total)}`,
+                    tag: `subscription-payments-${group.paymentKey}`,
+                    url: new URL('./', location.href).href
+                };
             });
             return reminders.sort((a, b) => a.scheduledAt - b.scheduledAt);
         }
@@ -2462,6 +2489,7 @@
             renderList();
             renderCalendar();
             renderAnalysis();
+            schedulePaymentNotificationSync();
         }
 
         let viewTransitionTimer = null;
