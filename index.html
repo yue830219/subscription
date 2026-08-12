@@ -472,6 +472,11 @@
                 <button type="button" id="detail-status-toggle" onclick="toggleSelectedSubscriptionStatus()" class="transition active:scale-95" aria-label="切換訂閱啟用狀態"><span id="detail-status" class="text-lg font-bold text-green-400"><i class="fa-solid fa-circle-check mr-1"></i>啟用中</span></button>
             </div>
 
+            <div class="bg-darkCard rounded-3xl p-5 flex justify-between items-center border border-darkBorder/50">
+                <span class="text-lg text-gray-400">付款提醒</span>
+                <span id="detail-notification-status" class="text-lg font-bold text-green-400"><i class="fa-solid fa-bell mr-1"></i>已開啟</span>
+            </div>
+
             <div class="bg-darkCard rounded-3xl p-5 space-y-5 border border-darkBorder/50">
                 <div class="flex justify-between items-center gap-4"><span class="text-lg text-gray-400">下次付款</span><span id="detail-next-date" class="text-lg font-semibold text-right"></span></div>
                 <div class="flex justify-between items-center gap-4"><span class="text-lg text-gray-400">每期費用</span><span id="detail-period-amount" class="text-lg font-semibold text-right"></span></div>
@@ -2954,6 +2959,10 @@
             detailStatus.className = `text-lg font-bold ${isActive ? 'text-green-400' : 'text-red-400'}`;
             detailStatus.innerHTML = `<i class="fa-solid ${isActive ? 'fa-circle-check' : 'fa-circle-xmark'} mr-1"></i>${isActive ? '啟用中' : '已停用'}`;
             document.getElementById('detail-status-toggle').setAttribute('aria-label', isActive ? '停用此訂閱' : '啟用此訂閱');
+            const detailNotificationStatus = document.getElementById('detail-notification-status');
+            const notificationEnabled = sub.notificationEnabled !== false;
+            detailNotificationStatus.className = `text-lg font-bold ${notificationEnabled ? 'text-green-400' : 'text-gray-400'}`;
+            detailNotificationStatus.innerHTML = `<i class="fa-solid ${notificationEnabled ? 'fa-bell' : 'fa-bell-slash'} mr-1"></i>${notificationEnabled ? '已開啟' : '已關閉'}`;
             document.getElementById('detail-next-date').textContent = nextPayment ? formatDisplayDate(nextPaymentKey) : '無後續付款';
             document.getElementById('detail-period-amount').textContent = subscriptionAmountDetail(sub);
             document.getElementById('detail-days-until').textContent = nextPayment ? daysUntil(nextPaymentKey) : '—';
