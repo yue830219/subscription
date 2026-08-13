@@ -52,6 +52,9 @@
             const useLight = preference === 'light' || (preference === 'auto' && hour >= 6 && hour < 18);
             document.documentElement.classList.toggle('theme-light', useLight);
             document.documentElement.classList.toggle('dark', !useLight);
+            if (sessionStorage.getItem('app_theme_save_transition') === '1') {
+                document.documentElement.classList.add('theme-save-arrival');
+            }
         })();
     </script>
     <style>
@@ -77,6 +80,20 @@
             scrollbar-width: none;
         }
         html.theme-light body { background-color: #f2f4f8; color: #111827; }
+        html.theme-save-leaving body {
+            opacity: 0;
+            transform: translate3d(-12px, 0, 0) scale(.992);
+            transition: opacity 360ms ease, transform 360ms ease;
+        }
+        html.theme-save-arrival body {
+            opacity: 0;
+            transform: translate3d(12px, 0, 0) scale(.992);
+        }
+        html.theme-save-ready body {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) scale(1);
+            transition: opacity 430ms ease, transform 430ms cubic-bezier(.22, 1, .36, 1);
+        }
         .main-top-bar {
             background: transparent !important;
             border-bottom-color: transparent !important;
@@ -98,6 +115,54 @@
             height: 0.4rem;
             background: rgb(var(--theme-bg));
             pointer-events: none;
+        }
+        #theme-preview-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            display: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #theme-preview-status-strip {
+            position: fixed;
+            inset: 0 0 auto;
+            z-index: 9999;
+            display: none;
+            height: .4rem;
+            pointer-events: none;
+        }
+        #app-version-badge {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + .55rem);
+            right: .7rem;
+            z-index: 45;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, .72);
+            color: #fff;
+            padding: .2rem .45rem;
+            font-size: .62rem;
+            line-height: 1;
+            pointer-events: none;
+        }
+        #modal-theme-settings.theme-preview-light {
+            --theme-bg: 242 244 248;
+            --theme-card: 255 255 255;
+            --theme-card-secondary: 235 238 244;
+            --theme-border: 209 214 224;
+            color: #111827;
+            color-scheme: light;
+        }
+        #modal-theme-settings.theme-preview-light .text-white { color: #111827 !important; }
+        #modal-theme-settings.theme-preview-light .text-gray-400 { color: #6b7280 !important; }
+        #modal-theme-settings.theme-preview-light .text-gray-500 { color: #64748b !important; }
+        #modal-theme-settings.theme-preview-dark {
+            --theme-bg: 15 15 18;
+            --theme-card: 26 26 30;
+            --theme-card-secondary: 37 37 41;
+            --theme-border: 42 42 48;
+            color: #fff;
+            color-scheme: dark;
         }
         #floating-add-button {
             position: fixed !important;
@@ -293,6 +358,9 @@
 </head>
 <body class="max-w-md mx-auto min-h-screen bg-darkBg text-white relative pb-20 border-x border-darkBorder/30">
     <div id="ios-status-bar-shield" aria-hidden="true"></div>
+    <div id="theme-preview-overlay" aria-hidden="true"></div>
+    <div id="theme-preview-status-strip" aria-hidden="true"></div>
+    <div id="app-version-badge" aria-label="版本資訊">v1.1.0</div>
     <div id="portrait-lock-overlay" class="fixed inset-0 z-[999] flex-col items-center justify-center gap-4 bg-[#0f0f12] p-8 text-center">
         <i class="fa-solid fa-mobile-screen-button text-5xl text-accentBlue"></i>
         <p class="text-xl font-bold">請將手機轉回直向</p>
@@ -906,7 +974,7 @@
         <header class="sticky top-0 z-10 flex items-center justify-between border-b border-darkBorder/60 bg-darkBg/95 px-4 py-4 backdrop-blur-md">
             <button type="button" onclick="closeThemeSettingsModal()" class="w-10 text-left text-accentBlue" aria-label="返回設定"><i class="fa-solid fa-chevron-left text-lg"></i></button>
             <h2 class="text-lg font-bold">佈景主題</h2>
-            <span class="w-10"></span>
+            <button type="button" onclick="saveThemePreview()" class="w-10 text-right text-sm font-bold text-accentBlue" aria-label="儲存佈景主題">儲存</button>
         </header>
         <main class="mx-auto w-full max-w-md p-4">
             <div id="theme-preference-options" class="rounded-3xl border border-darkBorder/60 bg-darkCard p-2"></div>
@@ -1129,6 +1197,9 @@
         let selectedSubscriptionId = null;
         let subscriptionModalReturnDetailId = null;
         let upcomingGroupDays = 7;
+        const APP_VERSION = 'v1.1.0';
+        let pendingThemePreference = null;
+        let themePreviewSequence = 0;
 
         // Date Picker State
         const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -1146,7 +1217,10 @@
             document.addEventListener('pointerdown', dismissSubscriptionSwipeOnOutsidePress, true);
             document.addEventListener('touchstart', dismissSubscriptionSwipeOnOutsidePress, true);
             document.addEventListener('click', consumeSubscriptionSwipeDismissClick, true);
+            const versionBadge = document.getElementById('app-version-badge');
+            if (versionBadge) versionBadge.textContent = APP_VERSION;
             applyThemePreference();
+            completeThemeSaveArrival();
             populateDropdowns();
             document.getElementById('default-currency').value = defaultCurrency;
             document.getElementById('display-currency').value = displayCurrency;
@@ -3168,29 +3242,121 @@
             }
         }
 
-        function saveThemePreference(value) {
+        function getThemePreviewColors(preference) {
+            return resolvedTheme(preference) === 'light'
+                ? { background: '#f2f4f8', strip: '#f2f4f8' }
+                : { background: '#0f0f12', strip: '#0f0f12' };
+        }
+
+        function clearThemeSettingsPreview() {
+            const modal = document.getElementById('modal-theme-settings');
+            if (modal) modal.classList.remove('theme-preview-light', 'theme-preview-dark');
+        }
+
+        function applyThemeSettingsPreview(preference) {
+            const modal = document.getElementById('modal-theme-settings');
+            if (!modal) return;
+            modal.classList.remove('theme-preview-light', 'theme-preview-dark');
+            modal.classList.add(resolvedTheme(preference) === 'light' ? 'theme-preview-light' : 'theme-preview-dark');
+        }
+
+        function hideThemePreviewOverlay() {
+            const overlay = document.getElementById('theme-preview-overlay');
+            if (!overlay) return;
+            overlay.style.display = 'none';
+            overlay.style.opacity = '0';
+            overlay.style.transition = '';
+        }
+
+        function clearThemePreviewLayers() {
+            themePreviewSequence += 1;
+            hideThemePreviewOverlay();
+            const strip = document.getElementById('theme-preview-status-strip');
+            if (strip) {
+                strip.style.display = 'none';
+                strip.style.background = '';
+            }
+        }
+
+        function selectThemePreview(value) {
+            if (!['auto', 'light', 'dark'].includes(value)) return;
+            const previousActualTheme = resolvedTheme();
+            pendingThemePreference = value;
+            clearThemePreviewLayers();
+            if (resolvedTheme(value) === previousActualTheme) {
+                clearThemeSettingsPreview();
+                renderThemePreferenceOptions();
+                return;
+            }
+
+            renderThemePreferenceOptions();
+            const sequence = ++themePreviewSequence;
+            const overlay = document.getElementById('theme-preview-overlay');
+            const strip = document.getElementById('theme-preview-status-strip');
+            const colors = getThemePreviewColors(value);
+            overlay.style.background = colors.background;
+            overlay.style.display = 'block';
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 230ms ease';
+            requestAnimationFrame(() => {
+                if (sequence === themePreviewSequence) overlay.style.opacity = '1';
+            });
+            window.setTimeout(() => {
+                if (sequence !== themePreviewSequence) return;
+                applyThemeSettingsPreview(value);
+                strip.style.background = colors.strip;
+                strip.style.display = 'block';
+                overlay.style.transition = 'opacity 300ms ease';
+                overlay.style.opacity = '0';
+                window.setTimeout(() => {
+                    if (sequence === themePreviewSequence) hideThemePreviewOverlay();
+                }, 320);
+            }, 250);
+        }
+
+        function saveThemePreview() {
+            const value = pendingThemePreference || getThemePreference();
             if (!['auto', 'light', 'dark'].includes(value)) return;
             localStorage.setItem('app_theme_preference', value);
-            applyThemePreference();
+            clearThemePreviewLayers();
+            clearThemeSettingsPreview();
+            sessionStorage.setItem('app_theme_save_transition', '1');
+            document.documentElement.classList.add('theme-save-leaving');
+            window.setTimeout(() => {
+                window.location.replace(window.location.href.split('#')[0]);
+            }, 370);
+        }
+
+        function completeThemeSaveArrival() {
+            if (!document.documentElement.classList.contains('theme-save-arrival')) return;
+            sessionStorage.removeItem('app_theme_save_transition');
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                document.documentElement.classList.remove('theme-save-arrival');
+                document.documentElement.classList.add('theme-save-ready');
+                window.setTimeout(() => document.documentElement.classList.remove('theme-save-ready'), 460);
+            }));
         }
 
         function renderThemePreferenceOptions() {
             const container = document.getElementById('theme-preference-options');
             if (!container) return;
-            const selected = getThemePreference();
+            const selected = pendingThemePreference || getThemePreference();
             const options = [
                 ['auto', 'fa-clock', '自動', '依早晚時間切換'],
                 ['light', 'fa-sun', '淺色', '明亮背景與深色文字'],
                 ['dark', 'fa-moon', '深色', '維持目前深色佈景']
             ];
             container.innerHTML = options.map(([value, icon, label, description]) => `
-                <button type="button" onclick="saveThemePreference('${value}')" class="w-full flex items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-darkCardSecondary ${selected === value ? 'bg-darkCardSecondary' : ''}">
+                <button type="button" onclick="selectThemePreview('${value}')" class="w-full flex items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-darkCardSecondary ${selected === value ? 'bg-darkCardSecondary' : ''}">
                     <span class="flex min-w-0 items-center gap-3"><span class="w-10 h-10 shrink-0 rounded-xl bg-accentBlue/15 text-accentBlue flex items-center justify-center"><i class="fa-solid ${icon}"></i></span><span><span class="block text-sm font-bold">${label}</span><span class="mt-0.5 block text-xs text-gray-400">${description}</span></span></span>
                     <span class="w-6 h-6 rounded-full border-2 flex items-center justify-center ${selected === value ? 'border-accentBlue bg-accentBlue text-white' : 'border-gray-500'}">${selected === value ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}</span>
                 </button>`).join('');
         }
 
         function openThemeSettingsModal() {
+            pendingThemePreference = getThemePreference();
+            clearThemePreviewLayers();
+            clearThemeSettingsPreview();
             renderThemePreferenceOptions();
             const modal = document.getElementById('modal-theme-settings');
             modal.classList.remove('hidden');
@@ -3200,6 +3366,9 @@
         }
 
         function closeThemeSettingsModal() {
+            pendingThemePreference = null;
+            clearThemePreviewLayers();
+            clearThemeSettingsPreview();
             closeOverlaySmooth(document.getElementById('modal-theme-settings'));
         }
 
