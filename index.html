@@ -95,17 +95,18 @@
             transform: translate3d(0, 0, 0) scale(1);
             transition: opacity 430ms ease, transform 430ms cubic-bezier(.22, 1, .36, 1);
         }
-        #theme-save-overlay {
+        html.theme-save-arrival::before,
+        html.theme-save-overlay-exiting::before {
+            content: '';
             position: fixed;
             inset: 0;
-            z-index: 10000;
-            display: none;
+            z-index: 2147483647;
             opacity: 1;
             pointer-events: none;
         }
-        html.theme-save-arrival #theme-save-overlay { display: block; }
-        html[data-theme-save-overlay="light"] #theme-save-overlay { background: #f2f4f8; }
-        html[data-theme-save-overlay="dark"] #theme-save-overlay { background: #0f0f12; }
+        html.theme-save-overlay-exiting::before { opacity: 0; transition: opacity 300ms ease; }
+        html[data-theme-save-overlay="light"]::before { background: #f2f4f8; }
+        html[data-theme-save-overlay="dark"]::before { background: #0f0f12; }
         .main-top-bar {
             background: transparent !important;
             border-bottom-color: transparent !important;
@@ -334,9 +335,8 @@
     </style>
 </head>
 <body class="max-w-md mx-auto min-h-screen bg-darkBg text-white relative pb-20 border-x border-darkBorder/30">
-    <div id="theme-save-overlay" aria-hidden="true"></div>
     <div id="ios-status-bar-shield" aria-hidden="true"></div>
-    <div id="app-version-badge" aria-label="版本資訊">v1.1.3</div>
+    <div id="app-version-badge" aria-label="版本資訊">v1.1.4</div>
     <div id="portrait-lock-overlay" class="fixed inset-0 z-[999] flex-col items-center justify-center gap-4 bg-[#0f0f12] p-8 text-center">
         <i class="fa-solid fa-mobile-screen-button text-5xl text-accentBlue"></i>
         <p class="text-xl font-bold">請將手機轉回直向</p>
@@ -1173,7 +1173,7 @@
         let selectedSubscriptionId = null;
         let subscriptionModalReturnDetailId = null;
         let upcomingGroupDays = 7;
-        const APP_VERSION = 'v1.1.3';
+        const APP_VERSION = 'v1.1.4';
         let pendingThemePreference = null;
 
         // Date Picker State
@@ -3238,21 +3238,13 @@
         function completeThemeSaveArrival() {
             if (!document.documentElement.classList.contains('theme-save-arrival')) return;
             sessionStorage.removeItem('app_theme_save_transition');
-            const overlay = document.getElementById('theme-save-overlay');
             window.setTimeout(() => requestAnimationFrame(() => {
                 document.documentElement.classList.remove('theme-save-arrival');
+                document.documentElement.classList.add('theme-save-overlay-exiting');
                 document.documentElement.classList.add('theme-save-ready');
-                if (overlay) {
-                    overlay.style.transition = 'opacity 300ms ease';
-                    overlay.style.opacity = '0';
-                }
                 window.setTimeout(() => {
-                    if (overlay) {
-                        overlay.style.display = 'none';
-                        overlay.style.opacity = '';
-                        overlay.style.transition = '';
-                    }
                     document.documentElement.classList.remove('theme-save-ready');
+                    document.documentElement.classList.remove('theme-save-overlay-exiting');
                     delete document.documentElement.dataset.themeSaveOverlay;
                     sessionStorage.removeItem('app_theme_save_previous_theme');
                 }, 460);
