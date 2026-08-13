@@ -78,7 +78,6 @@
             scrollbar-width: none;
         }
         html.theme-light body { background-color: #f2f4f8; color: #111827; }
-        /* Keep content below the iPhone status area while the page itself extends behind it. */
         #portrait-lock-overlay,
         #view-subscription-detail,
         #modal-sub,
@@ -88,51 +87,6 @@
         #modal-manager,
         #modal-startup-account {
             padding-top: env(safe-area-inset-top, 0px);
-        }
-        /* Full-screen pages draw their return bar all the way through the status area. */
-        #view-subscription-detail,
-        #modal-sub,
-        #modal-theme-settings,
-        #modal-card-layout,
-        #modal-manager {
-            padding-top: 0 !important;
-        }
-        #view-subscription-detail > header,
-        #modal-sub > div:first-child,
-        #modal-theme-settings > header,
-        #modal-card-layout > header,
-        #modal-manager > div > div:first-child {
-            position: sticky !important;
-            top: 0;
-            z-index: 300 !important;
-            padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem 1rem;
-            background-color: rgb(var(--theme-bg) / .90) !important;
-            -webkit-backdrop-filter: blur(16px) !important;
-            backdrop-filter: blur(16px) !important;
-        }
-        #view-subscription-detail > header::before,
-        #modal-sub > div:first-child::before,
-        #modal-theme-settings > header::before,
-        #modal-card-layout > header::before,
-        #modal-manager > div > div:first-child::before {
-            content: '';
-            position: absolute;
-            inset: 0 0 auto;
-            height: env(safe-area-inset-top, 0px);
-            background: rgb(var(--theme-bg) / .90);
-            -webkit-backdrop-filter: blur(16px);
-            backdrop-filter: blur(16px);
-            pointer-events: none;
-        }
-        #modal-manager > div {
-            padding-top: 0 !important;
-        }
-        #modal-manager > div > div:first-child {
-            top: 0;
-            margin-top: 0 !important;
-        }
-        #modal-settings > div:first-child {
-            padding-top: calc(1.5rem + env(safe-area-inset-top, 0px));
         }
         .main-top-bar {
             background: transparent !important;
@@ -154,19 +108,6 @@
             z-index: 200;
             height: 0.4rem;
             background: rgb(var(--theme-bg));
-            pointer-events: none;
-        }
-        #app-version-badge {
-            position: fixed;
-            top: calc(env(safe-area-inset-top, 0px) + .5rem);
-            right: .65rem;
-            z-index: 500;
-            border-radius: 999px;
-            padding: .2rem .45rem;
-            background: rgba(15, 23, 42, .72);
-            color: #fff;
-            font-size: .62rem;
-            line-height: 1;
             pointer-events: none;
         }
         #floating-add-button {
@@ -363,7 +304,6 @@
 </head>
 <body class="max-w-md mx-auto min-h-screen bg-darkBg text-white relative pb-20 border-x border-darkBorder/30">
     <div id="ios-status-bar-shield" aria-hidden="true"></div>
-    <div id="app-version-badge" aria-label="版本資訊">v1.1.8</div>
     <div id="portrait-lock-overlay" class="fixed inset-0 z-[999] flex-col items-center justify-center gap-4 bg-[#0f0f12] p-8 text-center">
         <i class="fa-solid fa-mobile-screen-button text-5xl text-accentBlue"></i>
         <p class="text-xl font-bold">請將手機轉回直向</p>
