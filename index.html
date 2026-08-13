@@ -88,6 +88,35 @@
         #modal-startup-account {
             padding-top: env(safe-area-inset-top, 0px);
         }
+        /* Return bars extend through the status area, while their controls remain below it. */
+        #view-subscription-detail,
+        #modal-sub,
+        #modal-theme-settings,
+        #modal-card-layout,
+        #modal-manager {
+            padding-top: 0 !important;
+        }
+        #view-subscription-detail > header,
+        #modal-sub > div:first-child,
+        #modal-theme-settings > header,
+        #modal-card-layout > header {
+            top: 0;
+            padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem 1rem;
+            background-color: rgb(var(--theme-bg)) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
+        #modal-manager > div {
+            padding-top: 0 !important;
+        }
+        #modal-manager > div > div:first-child {
+            top: 0;
+            margin-top: 0 !important;
+            padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem 1rem;
+            background-color: rgb(var(--theme-bg)) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
         .main-top-bar {
             background: transparent !important;
             border-bottom-color: transparent !important;
