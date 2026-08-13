@@ -2,7 +2,7 @@
 <html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0f0f12">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -99,7 +99,7 @@
         html.theme-save-overlay-exiting::before {
             content: '';
             position: fixed;
-            inset: 0;
+            inset: calc(-1 * env(safe-area-inset-top, 0px)) calc(-1 * env(safe-area-inset-right, 0px)) calc(-1 * env(safe-area-inset-bottom, 0px)) calc(-1 * env(safe-area-inset-left, 0px));
             z-index: 2147483647;
             opacity: 1;
             pointer-events: none;
@@ -336,7 +336,7 @@
 </head>
 <body class="max-w-md mx-auto min-h-screen bg-darkBg text-white relative pb-20 border-x border-darkBorder/30">
     <div id="ios-status-bar-shield" aria-hidden="true"></div>
-    <div id="app-version-badge" aria-label="版本資訊">v1.1.4</div>
+    <div id="app-version-badge" aria-label="版本資訊">v1.1.5</div>
     <div id="portrait-lock-overlay" class="fixed inset-0 z-[999] flex-col items-center justify-center gap-4 bg-[#0f0f12] p-8 text-center">
         <i class="fa-solid fa-mobile-screen-button text-5xl text-accentBlue"></i>
         <p class="text-xl font-bold">請將手機轉回直向</p>
@@ -1173,7 +1173,7 @@
         let selectedSubscriptionId = null;
         let subscriptionModalReturnDetailId = null;
         let upcomingGroupDays = 7;
-        const APP_VERSION = 'v1.1.4';
+        const APP_VERSION = 'v1.1.5';
         let pendingThemePreference = null;
 
         // Date Picker State
