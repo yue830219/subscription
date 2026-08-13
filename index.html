@@ -99,59 +99,6 @@
             background: rgb(var(--theme-bg));
             pointer-events: none;
         }
-        #theme-save-transition-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 10000;
-            display: none;
-            opacity: 0;
-            pointer-events: none;
-        }
-        #modal-theme-settings.theme-preview-light {
-            --theme-bg: 242 244 248;
-            --theme-card: 255 255 255;
-            --theme-card-secondary: 235 238 244;
-            --theme-border: 209 214 224;
-            color: #111827;
-            color-scheme: light;
-        }
-        #modal-theme-settings.theme-preview-light > header {
-            background-color: rgba(242, 244, 248, .95) !important;
-        }
-        #modal-theme-settings.theme-preview-light .text-gray-400 { color: #6b7280 !important; }
-        #modal-theme-settings.theme-preview-light .text-gray-500 { color: #64748b !important; }
-        #modal-theme-settings.theme-preview-dark {
-            --theme-bg: 15 15 18;
-            --theme-card: 26 26 30;
-            --theme-card-secondary: 37 37 41;
-            --theme-border: 42 42 48;
-            color: #fff;
-            color-scheme: dark;
-        }
-        #modal-theme-settings.theme-preview-dark > header {
-            background-color: rgba(15, 15, 18, .95) !important;
-        }
-        #modal-theme-settings.theme-preview-dark .text-white { color: #fff !important; }
-        /* TEMP VERSION BADGE: remove this block and #app-version-badge when requested. */
-        #app-version-badge {
-            position: fixed;
-            top: .65rem;
-            right: .65rem;
-            z-index: 30;
-            padding: .2rem .48rem;
-            border: 1px solid rgb(var(--theme-border) / .65);
-            border-radius: 9999px;
-            background: rgb(var(--theme-card) / .76);
-            color: rgb(156 163 175);
-            font-size: .62rem;
-            font-weight: 800;
-            line-height: 1;
-            letter-spacing: .04em;
-            -webkit-backdrop-filter: blur(12px);
-            backdrop-filter: blur(12px);
-            box-shadow: 0 3px 10px rgba(0, 0, 0, .16);
-            pointer-events: none;
-        }
         #floating-add-button {
             position: fixed !important;
             bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + .75rem)) !important;
@@ -346,8 +293,6 @@
 </head>
 <body class="max-w-md mx-auto min-h-screen bg-darkBg text-white relative pb-20 border-x border-darkBorder/30">
     <div id="ios-status-bar-shield" aria-hidden="true"></div>
-    <div id="theme-save-transition-overlay" aria-hidden="true"></div>
-    <div id="app-version-badge" aria-label="目前版本"></div>
     <div id="portrait-lock-overlay" class="fixed inset-0 z-[999] flex-col items-center justify-center gap-4 bg-[#0f0f12] p-8 text-center">
         <i class="fa-solid fa-mobile-screen-button text-5xl text-accentBlue"></i>
         <p class="text-xl font-bold">請將手機轉回直向</p>
@@ -961,7 +906,7 @@
         <header class="sticky top-0 z-10 flex items-center justify-between border-b border-darkBorder/60 bg-darkBg/95 px-4 py-4 backdrop-blur-md">
             <button type="button" onclick="closeThemeSettingsModal()" class="w-10 text-left text-accentBlue" aria-label="返回設定"><i class="fa-solid fa-chevron-left text-lg"></i></button>
             <h2 class="text-lg font-bold">佈景主題</h2>
-            <button type="button" onclick="saveThemePreview()" class="w-10 text-right text-sm font-bold text-accentBlue" aria-label="儲存佈景主題">儲存</button>
+            <span class="w-10"></span>
         </header>
         <main class="mx-auto w-full max-w-md p-4">
             <div id="theme-preference-options" class="rounded-3xl border border-darkBorder/60 bg-darkCard p-2"></div>
@@ -1136,9 +1081,6 @@
             }
         }
 
-        // TEMP VERSION BADGE: increment after every user-visible update; remove when requested.
-        const APP_VERSION = 'v1.1.0';
-
         const DEFAULT_CARD_LAYOUT = {
             coloredCard: true,
             showCycle: true,
@@ -1172,8 +1114,6 @@
         let cardLayout = loadCardLayout();
 
         let currentLogoBase64 = '';
-        let pendingThemePreference = null;
-        let themeSaveAnimation = null;
         let currentIcon = 'fa-image';
         let currentCalDate = new Date();
         let managerType = ''; 
@@ -1206,7 +1146,6 @@
             document.addEventListener('pointerdown', dismissSubscriptionSwipeOnOutsidePress, true);
             document.addEventListener('touchstart', dismissSubscriptionSwipeOnOutsidePress, true);
             document.addEventListener('click', consumeSubscriptionSwipeDismissClick, true);
-            document.getElementById('app-version-badge').textContent = APP_VERSION;
             applyThemePreference();
             populateDropdowns();
             document.getElementById('default-currency').value = defaultCurrency;
@@ -3229,49 +3168,31 @@
             }
         }
 
-        function selectThemePreview(value) {
+        function saveThemePreference(value) {
             if (!['auto', 'light', 'dark'].includes(value)) return;
-            pendingThemePreference = value;
-            renderThemePreferenceOptions();
-            applyThemeSettingsPreview(value);
-        }
-
-        function applyThemeSettingsPreview(preference) {
-            const modal = document.getElementById('modal-theme-settings');
-            if (!modal) return;
-            const previewTheme = resolvedTheme(preference);
-            modal.classList.toggle('theme-preview-light', previewTheme === 'light');
-            modal.classList.toggle('theme-preview-dark', previewTheme === 'dark');
-        }
-
-        function clearThemeSettingsPreview() {
-            const modal = document.getElementById('modal-theme-settings');
-            modal?.classList.remove('theme-preview-light', 'theme-preview-dark');
+            localStorage.setItem('app_theme_preference', value);
+            applyThemePreference();
         }
 
         function renderThemePreferenceOptions() {
             const container = document.getElementById('theme-preference-options');
             if (!container) return;
-            const selected = ['auto', 'light', 'dark'].includes(pendingThemePreference)
-                ? pendingThemePreference
-                : getThemePreference();
+            const selected = getThemePreference();
             const options = [
                 ['auto', 'fa-clock', '自動', '依早晚時間切換'],
                 ['light', 'fa-sun', '淺色', '明亮背景與深色文字'],
                 ['dark', 'fa-moon', '深色', '維持目前深色佈景']
             ];
             container.innerHTML = options.map(([value, icon, label, description]) => `
-                <button type="button" onclick="selectThemePreview('${value}')" class="w-full flex items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-darkCardSecondary ${selected === value ? 'bg-darkCardSecondary' : ''}">
+                <button type="button" onclick="saveThemePreference('${value}')" class="w-full flex items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-darkCardSecondary ${selected === value ? 'bg-darkCardSecondary' : ''}">
                     <span class="flex min-w-0 items-center gap-3"><span class="w-10 h-10 shrink-0 rounded-xl bg-accentBlue/15 text-accentBlue flex items-center justify-center"><i class="fa-solid ${icon}"></i></span><span><span class="block text-sm font-bold">${label}</span><span class="mt-0.5 block text-xs text-gray-400">${description}</span></span></span>
                     <span class="w-6 h-6 rounded-full border-2 flex items-center justify-center ${selected === value ? 'border-accentBlue bg-accentBlue text-white' : 'border-gray-500'}">${selected === value ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}</span>
                 </button>`).join('');
         }
 
         function openThemeSettingsModal() {
-            pendingThemePreference = getThemePreference();
             renderThemePreferenceOptions();
             const modal = document.getElementById('modal-theme-settings');
-            applyThemeSettingsPreview(pendingThemePreference);
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             modal.scrollTop = 0;
@@ -3279,68 +3200,7 @@
         }
 
         function closeThemeSettingsModal() {
-            const modal = document.getElementById('modal-theme-settings');
-            closeOverlaySmooth(modal, [modal], () => {
-                pendingThemePreference = null;
-                clearThemeSettingsPreview();
-            });
-        }
-
-        async function saveThemePreview() {
-            const value = ['auto', 'light', 'dark'].includes(pendingThemePreference)
-                ? pendingThemePreference
-                : getThemePreference();
-            const overlay = document.getElementById('theme-save-transition-overlay');
-            if (!overlay || typeof overlay.animate !== 'function') {
-                finishThemeSave(value);
-                return;
-            }
-            themeSaveAnimation?.cancel();
-            const currentThemeColor = document.documentElement.classList.contains('theme-light') ? '#f2f4f8' : '#0f0f12';
-            overlay.style.display = 'block';
-            overlay.style.backgroundColor = currentThemeColor;
-            let themeApplied = false;
-            try {
-                themeSaveAnimation = overlay.animate(
-                    [{ opacity: 0 }, { opacity: 1 }],
-                    { duration: 280, easing: 'ease-in-out', fill: 'forwards' }
-                );
-                await themeSaveAnimation.finished;
-                finishThemeSave(value);
-                themeApplied = true;
-                overlay.style.backgroundColor = resolvedTheme(value) === 'light' ? '#f2f4f8' : '#0f0f12';
-                themeSaveAnimation = overlay.animate(
-                    [{ opacity: 1 }, { opacity: 0 }],
-                    { duration: 360, easing: 'ease-in-out', fill: 'forwards' }
-                );
-                await themeSaveAnimation.finished;
-            } catch (error) {
-                if (!themeApplied) finishThemeSave(value);
-            } finally {
-                themeSaveAnimation = null;
-                overlay.style.display = 'none';
-                overlay.style.opacity = '';
-                overlay.style.backgroundColor = '';
-            }
-        }
-
-        function finishThemeSave(value) {
-            localStorage.setItem('app_theme_preference', value);
-            pendingThemePreference = null;
-            clearThemeSettingsPreview();
-            applyThemePreference();
-            const hideSurface = surface => {
-                if (!surface) return;
-                surface.classList.add('hidden');
-                surface.classList.remove('flex');
-                surface.style.transition = '';
-                surface.style.transform = '';
-                surface.style.opacity = '';
-                surface.style.willChange = '';
-            };
-            hideSurface(document.getElementById('modal-theme-settings'));
-            hideSurface(document.getElementById('modal-settings'));
-            switchView('list');
+            closeOverlaySmooth(document.getElementById('modal-theme-settings'));
         }
 
         function updateCardLayout(key, value) {
