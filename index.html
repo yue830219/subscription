@@ -2,7 +2,7 @@
 <html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0f0f12">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -52,9 +52,6 @@
             const useLight = preference === 'light' || (preference === 'auto' && hour >= 6 && hour < 18);
             document.documentElement.classList.toggle('theme-light', useLight);
             document.documentElement.classList.toggle('dark', !useLight);
-            if (sessionStorage.getItem('app_theme_transition') === '1') {
-                document.documentElement.classList.add('theme-transition-arrival');
-            }
         })();
     </script>
     <style>
@@ -75,24 +72,50 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #0f0f12;
             color: #ffffff;
+            padding-top: env(safe-area-inset-top, 0px);
             -webkit-tap-highlight-color: transparent;
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
         html.theme-light body { background-color: #f2f4f8; color: #111827; }
-        html.theme-transition-leaving body {
-            opacity: 0;
-            transform: translate3d(-12px, 0, 0) scale(.99);
-            transition: opacity 360ms ease, transform 360ms cubic-bezier(.4,0,.8,.2);
+        #portrait-lock-overlay,
+        #view-subscription-detail,
+        #modal-sub,
+        #modal-settings,
+        #modal-theme-settings,
+        #modal-card-layout,
+        #modal-manager,
+        #modal-startup-account {
+            padding-top: env(safe-area-inset-top, 0px);
         }
-        html.theme-transition-arrival body {
-            opacity: 0;
-            transform: translate3d(12px, 0, 0) scale(.99);
+        /* Return bars extend through the status area, while their controls remain below it. */
+        #view-subscription-detail,
+        #modal-sub,
+        #modal-theme-settings,
+        #modal-card-layout,
+        #modal-manager {
+            padding-top: 0 !important;
         }
-        html.theme-transition-ready body {
-            opacity: 1;
-            transform: translate3d(0, 0, 0) scale(1);
-            transition: opacity 420ms ease, transform 420ms cubic-bezier(.2,.8,.2,1);
+        #view-subscription-detail > header,
+        #modal-sub > div:first-child,
+        #modal-theme-settings > header,
+        #modal-card-layout > header {
+            top: 0;
+            padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem 1rem;
+            background-color: rgb(var(--theme-bg)) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
+        #modal-manager > div {
+            padding-top: 0 !important;
+        }
+        #modal-manager > div > div:first-child {
+            top: 0;
+            margin-top: 0 !important;
+            padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem 1rem;
+            background-color: rgb(var(--theme-bg)) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
         }
         .main-top-bar {
             background: transparent !important;
@@ -114,40 +137,6 @@
             z-index: 200;
             height: 0.4rem;
             background: rgb(var(--theme-bg));
-            pointer-events: none;
-        }
-        #theme-preview-status-shield {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            display: none;
-            opacity: 0;
-            pointer-events: none;
-        }
-        #theme-preview-status-shield.is-active { display: block; }
-        #theme-preview-status-shield.is-status-strip {
-            inset: 0 0 auto;
-            height: 0.4rem;
-            opacity: 1;
-        }
-        /* TEMP VERSION BADGE: remove this block and #app-version-badge when requested. */
-        #app-version-badge {
-            position: fixed;
-            top: .65rem;
-            right: .65rem;
-            z-index: 30;
-            padding: .2rem .48rem;
-            border: 1px solid rgb(var(--theme-border) / .65);
-            border-radius: 9999px;
-            background: rgb(var(--theme-card) / .76);
-            color: rgb(156 163 175);
-            font-size: .62rem;
-            font-weight: 800;
-            line-height: 1;
-            letter-spacing: .04em;
-            -webkit-backdrop-filter: blur(12px);
-            backdrop-filter: blur(12px);
-            box-shadow: 0 3px 10px rgba(0, 0, 0, .16);
             pointer-events: none;
         }
         #floating-add-button {
@@ -304,7 +293,8 @@
         .subscription-swipe-actions { position: absolute; inset: 0 .5rem 0 auto; display: flex; width: 7.5rem; align-items: center; justify-content: flex-end; gap: .5rem; }
         .subscription-swipe-action { width: 2.75rem; height: 2.75rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, .2); }
         .subscription-swipe-card { position: relative; z-index: 1; will-change: transform; }
-        .notification-status-badge { position: absolute; z-index: 3; top: -.45rem; right: -.45rem; width: 1.55rem; height: 1.55rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #fff !important; border: 2px solid rgb(var(--theme-bg)); box-shadow: 0 3px 9px rgba(0, 0, 0, .28); pointer-events: none; font-size: .68rem; }
+        .notification-status-badge { position: absolute; z-index: 3; top: -.45rem; right: -.45rem; width: 1.55rem; height: 1.55rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #fff !important; border: 2px solid rgb(var(--theme-bg)); box-shadow: 0 3px 9px rgba(0, 0, 0, .28); pointer-events: auto; cursor: pointer; font-size: .68rem; transition: transform 150ms ease, background-color 180ms ease; }
+        .notification-status-badge:active { transform: scale(.88); }
         .notification-status-badge.is-enabled { background: #3b82f6; }
         .notification-status-badge.is-disabled { background: #64748b; }
         .subscription-inactive-card { filter: grayscale(.25) brightness(.72); }
@@ -344,8 +334,6 @@
 </head>
 <body class="max-w-md mx-auto min-h-screen bg-darkBg text-white relative pb-20 border-x border-darkBorder/30">
     <div id="ios-status-bar-shield" aria-hidden="true"></div>
-    <div id="theme-preview-status-shield" aria-hidden="true"></div>
-    <div id="app-version-badge" aria-label="目前版本"></div>
     <div id="portrait-lock-overlay" class="fixed inset-0 z-[999] flex-col items-center justify-center gap-4 bg-[#0f0f12] p-8 text-center">
         <i class="fa-solid fa-mobile-screen-button text-5xl text-accentBlue"></i>
         <p class="text-xl font-bold">請將手機轉回直向</p>
@@ -959,7 +947,7 @@
         <header class="sticky top-0 z-10 flex items-center justify-between border-b border-darkBorder/60 bg-darkBg/95 px-4 py-4 backdrop-blur-md">
             <button type="button" onclick="closeThemeSettingsModal()" class="w-10 text-left text-accentBlue" aria-label="返回設定"><i class="fa-solid fa-chevron-left text-lg"></i></button>
             <h2 class="text-lg font-bold">佈景主題</h2>
-            <button type="button" onclick="commitThemePreference()" class="w-10 text-right text-sm font-bold text-accentBlue" aria-label="儲存佈景主題">儲存</button>
+            <span class="w-10"></span>
         </header>
         <main class="mx-auto w-full max-w-md p-4">
             <div id="theme-preference-options" class="rounded-3xl border border-darkBorder/60 bg-darkCard p-2"></div>
@@ -1134,9 +1122,6 @@
             }
         }
 
-        // TEMP VERSION BADGE: increment after every user-visible update; remove when requested.
-        const APP_VERSION = 'v1.0.7';
-
         const DEFAULT_CARD_LAYOUT = {
             coloredCard: true,
             showCycle: true,
@@ -1170,9 +1155,6 @@
         let cardLayout = loadCardLayout();
 
         let currentLogoBase64 = '';
-        let pendingThemePreference = null;
-        let themePreviewTransitionSequence = 0;
-        let themePreviewAnimation = null;
         let currentIcon = 'fa-image';
         let currentCalDate = new Date();
         let managerType = ''; 
@@ -1187,13 +1169,31 @@
         let exchangeRateStatus = '正在取得最新外幣匯率…';
         let selectedSubscriptionId = null;
         let subscriptionModalReturnDetailId = null;
-        let upcomingGroupDays = 7;
+        function getStoredUpcomingGroupDays() {
+            const value = Number(localStorage.getItem('subscription_upcoming_group_days'));
+            return [7, 3, 1].includes(value) ? value : 7;
+        }
+
+        let upcomingGroupDays = getStoredUpcomingGroupDays();
 
         // Date Picker State
         const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         let selectedPickerYear = currentCalDate.getFullYear();
         let selectedPickerMonth = currentCalDate.getMonth() + 1;
         let selectedPickerDay = currentCalDate.getDate();
+
+        async function requestPersistentAppStorage() {
+            if (!navigator.storage?.persist) return;
+
+            try {
+                const isPersistent = navigator.storage.persisted
+                    ? await navigator.storage.persisted()
+                    : false;
+                if (!isPersistent) await navigator.storage.persist();
+            } catch (error) {
+                console.warn('無法啟用永久離線儲存。', error);
+            }
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
             document.addEventListener('contextmenu', event => event.preventDefault());
@@ -1205,9 +1205,7 @@
             document.addEventListener('pointerdown', dismissSubscriptionSwipeOnOutsidePress, true);
             document.addEventListener('touchstart', dismissSubscriptionSwipeOnOutsidePress, true);
             document.addEventListener('click', consumeSubscriptionSwipeDismissClick, true);
-            document.getElementById('app-version-badge').textContent = APP_VERSION;
             applyThemePreference();
-            completeThemeTransitionArrival();
             populateDropdowns();
             document.getElementById('default-currency').value = defaultCurrency;
             document.getElementById('display-currency').value = displayCurrency;
@@ -1233,6 +1231,7 @@
             if (location.protocol === 'https:' && 'serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./service-worker.js').catch(error => console.warn('離線快取啟用失敗。', error));
             }
+            requestPersistentAppStorage();
             refreshPaymentNotificationSettings();
             openSubscriptionFromNotification();
             renderAnalysis();
@@ -3036,9 +3035,11 @@
             return `${days} 天`;
         }
 
-        function openSubscriptionDetail(id, shouldAnimate = true) {
+        function openSubscriptionDetail(id, shouldAnimate = true, preserveScroll = false) {
             const sub = subscriptions.find(item => item.id === id);
             if (!sub) return;
+            const detailView = document.getElementById('view-subscription-detail');
+            const previousScrollTop = detailView.scrollTop;
             selectedSubscriptionId = id;
             const nextPayment = getNextPaymentDate(sub);
             const nextPaymentKey = nextPayment ? toDateKey(nextPayment) : '';
@@ -3077,11 +3078,15 @@
                 ? `<img src="${logoSrc}" alt="" class="w-full h-full object-cover">`
                 : `<i class="subscription-glyph-icon fa-solid ${safeIconClass(sub.icon)}"></i>`;
 
-            document.getElementById('view-subscription-detail').classList.remove('hidden');
-            document.getElementById('view-subscription-detail').classList.add('flex');
-            const detailView = document.getElementById('view-subscription-detail');
-            detailView.scrollTop = 0;
-            requestAnimationFrame(() => { detailView.scrollTop = 0; });
+            detailView.classList.remove('hidden');
+            detailView.classList.add('flex');
+            if (preserveScroll) {
+                detailView.scrollTop = previousScrollTop;
+                requestAnimationFrame(() => { detailView.scrollTop = previousScrollTop; });
+            } else {
+                detailView.scrollTop = 0;
+                requestAnimationFrame(() => { detailView.scrollTop = 0; });
+            }
             if (shouldAnimate) animateOverlayIn(detailView);
         }
 
@@ -3209,7 +3214,8 @@
             return hour >= 6 && hour < 18 ? 'light' : 'dark';
         }
 
-        function applyThemePreference(preference = getThemePreference()) {
+        function applyThemePreference() {
+            const preference = getThemePreference();
             const theme = resolvedTheme(preference);
             const useLight = theme === 'light';
             document.documentElement.classList.toggle('theme-light', useLight);
@@ -3228,115 +3234,29 @@
             }
         }
 
-        async function selectThemePreference(value) {
+        function saveThemePreference(value) {
             if (!['auto', 'light', 'dark'].includes(value)) return;
-            stopThemePreviewTransition();
-            const sequence = ++themePreviewTransitionSequence;
-            pendingThemePreference = value;
-            renderThemePreferenceOptions();
-            clearThemePreviewStatusShield();
-            const currentTheme = document.documentElement.classList.contains('theme-light') ? 'light' : 'dark';
-            if (resolvedTheme(value) === currentTheme) return;
-            const shield = document.getElementById('theme-preview-status-shield');
-            if (!shield || typeof shield.animate !== 'function') {
-                applyThemePreference(value);
-                return;
-            }
-            const currentUseLight = document.documentElement.classList.contains('theme-light');
-            shield.style.backgroundColor = currentUseLight ? '#f2f4f8' : '#0f0f12';
-            shield.classList.add('is-active');
-            try {
-                themePreviewAnimation = shield.animate(
-                    [{ opacity: 0 }, { opacity: 1 }],
-                    { duration: 240, easing: 'ease-in-out', fill: 'forwards' }
-                );
-                await themePreviewAnimation.finished;
-                if (sequence !== themePreviewTransitionSequence) return;
-                applyThemePreference(value);
-                shield.style.backgroundColor = resolvedTheme(value) === 'light' ? '#f2f4f8' : '#0f0f12';
-                themePreviewAnimation = shield.animate(
-                    [{ opacity: 1 }, { opacity: 0 }],
-                    { duration: 300, easing: 'ease-in-out', fill: 'forwards' }
-                );
-                await themePreviewAnimation.finished;
-                if (sequence !== themePreviewTransitionSequence) return;
-                themePreviewAnimation.cancel();
-                themePreviewAnimation = null;
-                shield.classList.add('is-status-strip');
-                shield.style.opacity = '1';
-            } catch (error) {
-                if (sequence === themePreviewTransitionSequence) applyThemePreference(value);
-            } finally {
-                if (sequence === themePreviewTransitionSequence && !shield.classList.contains('is-status-strip')) {
-                    stopThemePreviewTransition();
-                }
-            }
-        }
-
-        function stopThemePreviewTransition() {
-            themePreviewAnimation?.cancel();
-            themePreviewAnimation = null;
-            clearThemePreviewStatusShield();
-        }
-
-        function cancelThemePreviewTransition() {
-            themePreviewTransitionSequence += 1;
-            stopThemePreviewTransition();
-        }
-
-        function clearThemePreviewStatusShield() {
-            const shield = document.getElementById('theme-preview-status-shield');
-            if (!shield) return;
-            shield.classList.remove('is-active', 'is-status-strip');
-            shield.style.opacity = '';
-            shield.style.backgroundColor = '';
-        }
-
-        function commitThemePreference() {
-            cancelThemePreviewTransition();
-            const value = ['auto', 'light', 'dark'].includes(pendingThemePreference)
-                ? pendingThemePreference
-                : getThemePreference();
             localStorage.setItem('app_theme_preference', value);
-            pendingThemePreference = null;
-            applyThemePreference(value);
-            clearThemePreviewStatusShield();
-            sessionStorage.setItem('app_theme_transition', '1');
-            const mainUrl = window.location.href.split(/[?#]/)[0];
-            document.documentElement.classList.add('theme-transition-leaving');
-            window.setTimeout(() => window.location.replace(mainUrl), 370);
-        }
-
-        function completeThemeTransitionArrival() {
-            if (!document.documentElement.classList.contains('theme-transition-arrival')) return;
-            sessionStorage.removeItem('app_theme_transition');
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-                document.documentElement.classList.remove('theme-transition-arrival');
-                document.documentElement.classList.add('theme-transition-ready');
-                window.setTimeout(() => document.documentElement.classList.remove('theme-transition-ready'), 430);
-            }));
+            applyThemePreference();
         }
 
         function renderThemePreferenceOptions() {
             const container = document.getElementById('theme-preference-options');
             if (!container) return;
-            const selected = ['auto', 'light', 'dark'].includes(pendingThemePreference)
-                ? pendingThemePreference
-                : getThemePreference();
+            const selected = getThemePreference();
             const options = [
                 ['auto', 'fa-clock', '自動', '依早晚時間切換'],
                 ['light', 'fa-sun', '淺色', '明亮背景與深色文字'],
                 ['dark', 'fa-moon', '深色', '維持目前深色佈景']
             ];
             container.innerHTML = options.map(([value, icon, label, description]) => `
-                <button type="button" onclick="selectThemePreference('${value}')" class="w-full flex items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-darkCardSecondary ${selected === value ? 'bg-darkCardSecondary' : ''}">
+                <button type="button" onclick="saveThemePreference('${value}')" class="w-full flex items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-darkCardSecondary ${selected === value ? 'bg-darkCardSecondary' : ''}">
                     <span class="flex min-w-0 items-center gap-3"><span class="w-10 h-10 shrink-0 rounded-xl bg-accentBlue/15 text-accentBlue flex items-center justify-center"><i class="fa-solid ${icon}"></i></span><span><span class="block text-sm font-bold">${label}</span><span class="mt-0.5 block text-xs text-gray-400">${description}</span></span></span>
                     <span class="w-6 h-6 rounded-full border-2 flex items-center justify-center ${selected === value ? 'border-accentBlue bg-accentBlue text-white' : 'border-gray-500'}">${selected === value ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}</span>
                 </button>`).join('');
         }
 
         function openThemeSettingsModal() {
-            pendingThemePreference = getThemePreference();
             renderThemePreferenceOptions();
             const modal = document.getElementById('modal-theme-settings');
             modal.classList.remove('hidden');
@@ -3346,13 +3266,7 @@
         }
 
         function closeThemeSettingsModal() {
-            cancelThemePreviewTransition();
-            const modal = document.getElementById('modal-theme-settings');
-            closeOverlaySmooth(modal, [modal], () => {
-                pendingThemePreference = null;
-                applyThemePreference();
-                clearThemePreviewStatusShield();
-            });
+            closeOverlaySmooth(document.getElementById('modal-theme-settings'));
         }
 
         function updateCardLayout(key, value) {
@@ -3409,6 +3323,7 @@
         function cycleUpcomingGroupDays() {
             const options = [7, 3, 1];
             upcomingGroupDays = options[(options.indexOf(upcomingGroupDays) + 1) % options.length];
+            localStorage.setItem('subscription_upcoming_group_days', String(upcomingGroupDays));
             renderList();
         }
 
@@ -3604,7 +3519,7 @@
                     const metadataHtml = metadata.length ? `<div class="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 mt-1">${metadata.join('')}</div>` : '';
                     const notificationEnabled = sub.notificationEnabled !== false;
                     const notificationBadge = cardLayout.showNotificationBadge
-                        ? `<span class="notification-status-badge ${notificationEnabled ? 'is-enabled' : 'is-disabled'}"><i class="fa-solid ${notificationEnabled ? 'fa-bell' : 'fa-bell-slash'}"></i></span>`
+                        ? `<button type="button" class="notification-status-badge ${notificationEnabled ? 'is-enabled' : 'is-disabled'}" onpointerdown="event.stopPropagation()" onclick="toggleSubscriptionNotification('${escapeHTML(sub.id)}', event)" aria-label="${notificationEnabled ? '關閉' : '開啟'} ${escapeHTML(sub.name)} 的付款提醒"><i class="fa-solid ${notificationEnabled ? 'fa-bell' : 'fa-bell-slash'}"></i></button>`
                         : '';
 
                     itemCard.innerHTML = `
@@ -3745,7 +3660,7 @@
             renderCalendar();
             renderAnalysis();
             if (selectedSubscriptionId === id && !document.getElementById('view-subscription-detail').classList.contains('hidden')) {
-                openSubscriptionDetail(id, false);
+                openSubscriptionDetail(id, false, true);
             }
         }
 
@@ -3754,11 +3669,22 @@
         }
 
         function toggleSelectedSubscriptionNotification() {
-            const sub = subscriptions.find(item => item.id === selectedSubscriptionId);
+            if (selectedSubscriptionId) toggleSubscriptionNotification(selectedSubscriptionId);
+        }
+
+        function toggleSubscriptionNotification(id, event = null) {
+            event?.preventDefault();
+            event?.stopPropagation();
+            const sub = subscriptions.find(item => item.id === id);
             if (!sub) return;
             sub.notificationEnabled = sub.notificationEnabled === false;
             if (!saveData()) return;
-            openSubscriptionDetail(sub.id, false);
+            renderList();
+            renderCalendar();
+            renderAnalysis();
+            if (selectedSubscriptionId === id && !document.getElementById('view-subscription-detail').classList.contains('hidden')) {
+                openSubscriptionDetail(id, false, true);
+            }
         }
 
         function quickDeleteSubscription(id) {
@@ -4137,6 +4063,8 @@
         function setupEdgeBackSwipe() {
             let startPoint = null;
             let resetTimer = null;
+            const backgroundTravel = () => window.innerWidth * 0.25;
+            const backgroundStartTransform = () => `translate3d(${-backgroundTravel()}px, 0, 0)`;
 
             const getBackAction = () => {
                 const getVisible = id => document.getElementById(id);
@@ -4221,7 +4149,7 @@
                 });
                 updateSurfaces(backgroundElements, {
                     transition: 'transform 300ms cubic-bezier(.2,.8,.2,1)',
-                    transform: 'translate3d(-18px, 0, 0)'
+                    transform: backgroundStartTransform()
                 });
                 window.clearTimeout(resetTimer);
                 resetTimer = window.setTimeout(() => {
@@ -4244,7 +4172,7 @@
                 resetSurfaces(topChromeElements);
                 updateSurfaces(back.elements, { willChange: 'transform, opacity' });
                 updateSurfaces(topChromeElements, { willChange: 'opacity' });
-                updateSurfaces(back.backgroundElements, { transition: 'none', transform: 'translate3d(-18px, 0, 0)', willChange: 'transform' });
+                updateSurfaces(back.backgroundElements, { transition: 'none', transform: backgroundStartTransform(), willChange: 'transform' });
                 startPoint = { x: touch.clientX, y: touch.clientY, axis: null, topChromeElements, ...back };
             }, { passive: true, capture: true });
 
@@ -4276,7 +4204,7 @@
                 });
                 updateSurfaces(startPoint.backgroundElements, {
                     transition: 'none',
-                    transform: `translate3d(${-18 * (1 - progress)}px, 0, 0)`
+                    transform: `translate3d(${-(travelLimit - surfaceOffset)}px, 0, 0)`
                 });
             }, { passive: false, capture: true });
 
@@ -4302,7 +4230,7 @@
                     });
                     updateSurfaces(backgroundElements, {
                         transition: 'transform 300ms cubic-bezier(.2,.8,.2,1)',
-                        transform: 'translate3d(-18px, 0, 0)'
+                        transform: backgroundStartTransform()
                     });
                     resetTimer = window.setTimeout(() => {
                         resetSurfaces(elements);
