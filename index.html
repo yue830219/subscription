@@ -4192,7 +4192,8 @@
                 const progress = horizontalOffset / window.innerWidth;
                 const travelLimit = window.innerWidth * 0.25;
                 const surfaceOffset = Math.min(horizontalOffset, travelLimit);
-                const fadeProgress = Math.max(0, Math.min(1, progress / 0.8));
+                const linearFadeProgress = Math.max(0, Math.min(1, progress / 0.8));
+                const fadeProgress = 1 - Math.pow(1 - linearFadeProgress, 2.4);
                 updateSurfaces(startPoint.elements, {
                     transition: 'none',
                     transform: `translate3d(${surfaceOffset}px, 0, 0)`,
