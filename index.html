@@ -297,7 +297,6 @@
         .notification-status-badge:active { transform: scale(.88); }
         .notification-status-badge.is-enabled { background: #3b82f6; }
         .notification-status-badge.is-disabled { background: #64748b; }
-        .edge-swipe-background { background-color: rgb(var(--theme-bg) / var(--edge-swipe-background-alpha, 1)) !important; }
         .subscription-inactive-card { filter: grayscale(.25) brightness(.72); }
         .app-switch-track { width: 3rem; height: 1.75rem; flex-shrink: 0; border-radius: 9999px; background: #4b5563; transition: background-color 200ms ease; }
         .app-switch-thumb { position: absolute; left: .25rem; top: .25rem; width: 1.25rem; height: 1.25rem; border-radius: 9999px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); pointer-events: none; transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
@@ -4125,20 +4124,6 @@
                 elements.forEach(element => Object.assign(element.style, styles));
             };
 
-            const setSurfaceBackgroundAlpha = (elements, alpha) => {
-                elements.forEach(element => {
-                    element.classList.add('edge-swipe-background');
-                    element.style.setProperty('--edge-swipe-background-alpha', String(alpha));
-                });
-            };
-
-            const resetSurfaceBackground = elements => {
-                elements.forEach(element => {
-                    element.classList.remove('edge-swipe-background');
-                    element.style.removeProperty('--edge-swipe-background-alpha');
-                });
-            };
-
             const getTopChromeElements = elements => elements.map(surface => {
                 const topChrome = surface.querySelector(':scope > header, :scope > .sticky, :scope > div > .sticky, :scope > div > :first-child');
                 if (!topChrome || topChrome.getBoundingClientRect().top > 80) return null;
@@ -4147,7 +4132,6 @@
 
             const resetSurfaces = elements => {
                 updateSurfaces(elements, { transition: '', transform: '', opacity: '', willChange: '' });
-                resetSurfaceBackground(elements);
             };
 
             const cancelEdgeSwipe = () => {
@@ -4155,19 +4139,18 @@
                 const { elements, backgroundElements, topChromeElements } = startPoint;
                 startPoint = null;
                 updateSurfaces(elements, {
-                    transition: 'transform 300ms cubic-bezier(.2,.8,.2,1), opacity 300ms ease, background-color 220ms ease',
+                    transition: 'transform 300ms cubic-bezier(.2,.8,.2,1), opacity 300ms ease',
                     transform: 'translate3d(0, 0, 0)',
                     opacity: '1'
                 });
                 updateSurfaces(topChromeElements, {
-                    transition: 'opacity 300ms ease, background-color 220ms ease',
+                    transition: 'opacity 300ms ease',
                     opacity: '1'
                 });
-                setSurfaceBackgroundAlpha(elements, 1);
-                setSurfaceBackgroundAlpha(topChromeElements, 1);
                 updateSurfaces(backgroundElements, {
-                    transition: 'transform 300ms cubic-bezier(.2,.8,.2,1)',
-                    transform: backgroundStartTransform()
+                    transition: 'transform 300ms cubic-bezier(.2,.8,.2,1), opacity 260ms ease',
+                    transform: backgroundStartTransform(),
+                    opacity: '0'
                 });
                 window.clearTimeout(resetTimer);
                 resetTimer = window.setTimeout(() => {
@@ -4190,7 +4173,7 @@
                 resetSurfaces(topChromeElements);
                 updateSurfaces(back.elements, { willChange: 'transform, opacity' });
                 updateSurfaces(topChromeElements, { willChange: 'opacity' });
-                updateSurfaces(back.backgroundElements, { transition: 'none', transform: backgroundStartTransform(), willChange: 'transform' });
+                updateSurfaces(back.backgroundElements, { transition: 'none', transform: backgroundStartTransform(), opacity: '0', willChange: 'transform, opacity' });
                 startPoint = { x: touch.clientX, y: touch.clientY, axis: null, topChromeElements, ...back };
             }, { passive: true, capture: true });
 
@@ -4210,9 +4193,8 @@
                 const progress = horizontalOffset / window.innerWidth;
                 const travelLimit = window.innerWidth * 0.25;
                 const surfaceOffset = Math.min(horizontalOffset, travelLimit);
-                const linearFadeProgress = Math.max(0, Math.min(1, progress / 0.8));
-                const fadeProgress = 1 - Math.pow(1 - linearFadeProgress, 2.4);
-                const backgroundAlpha = linearFadeProgress > 0 ? Math.max(0, 0.24 * (1 - linearFadeProgress)) : 1;
+                const backgroundRevealProgress = travelLimit > 0 ? surfaceOffset / travelLimit : 1;
+                const fadeProgress = Math.max(0, Math.min(1, progress / 0.8));
                 updateSurfaces(startPoint.elements, {
                     transition: 'none',
                     transform: `translate3d(${surfaceOffset}px, 0, 0)`,
@@ -4222,11 +4204,10 @@
                     transition: 'none',
                     opacity: `${1 - fadeProgress * 0.35}`
                 });
-                setSurfaceBackgroundAlpha(startPoint.elements, backgroundAlpha);
-                setSurfaceBackgroundAlpha(startPoint.topChromeElements, backgroundAlpha);
                 updateSurfaces(startPoint.backgroundElements, {
                     transition: 'none',
-                    transform: `translate3d(${-(travelLimit - surfaceOffset)}px, 0, 0)`
+                    transform: `translate3d(${-(travelLimit - surfaceOffset)}px, 0, 0)`,
+                    opacity: `${backgroundRevealProgress}`
                 });
             }, { passive: false, capture: true });
 
@@ -4242,19 +4223,18 @@
                     && Math.abs(deltaX) > Math.abs(deltaY);
                 if (!isHorizontalReturn) {
                     updateSurfaces(elements, {
-                        transition: 'transform 300ms cubic-bezier(.2,.8,.2,1), opacity 300ms ease, background-color 220ms ease',
+                        transition: 'transform 300ms cubic-bezier(.2,.8,.2,1), opacity 300ms ease',
                         transform: 'translate3d(0, 0, 0)',
                         opacity: '1'
                     });
                     updateSurfaces(topChromeElements, {
-                        transition: 'opacity 300ms ease, background-color 220ms ease',
+                        transition: 'opacity 300ms ease',
                         opacity: '1'
                     });
-                    setSurfaceBackgroundAlpha(elements, 1);
-                    setSurfaceBackgroundAlpha(topChromeElements, 1);
                     updateSurfaces(backgroundElements, {
-                        transition: 'transform 300ms cubic-bezier(.2,.8,.2,1)',
-                        transform: backgroundStartTransform()
+                        transition: 'transform 300ms cubic-bezier(.2,.8,.2,1), opacity 260ms ease',
+                        transform: backgroundStartTransform(),
+                        opacity: '0'
                     });
                     resetTimer = window.setTimeout(() => {
                         resetSurfaces(elements);
@@ -4274,11 +4254,10 @@
                     opacity: '0'
                 });
                 updateSurfaces(backgroundElements, {
-                    transition: 'transform 340ms cubic-bezier(.2,.8,.2,1)',
-                    transform: 'translate3d(0, 0, 0)'
+                    transition: 'transform 340ms cubic-bezier(.2,.8,.2,1), opacity 340ms ease',
+                    transform: 'translate3d(0, 0, 0)',
+                    opacity: '1'
                 });
-                setSurfaceBackgroundAlpha(elements, 0);
-                setSurfaceBackgroundAlpha(topChromeElements, 0);
                 resetTimer = window.setTimeout(() => {
                     element.dataset.skipCloseAnimation = 'true';
                     action();
