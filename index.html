@@ -215,7 +215,10 @@
             border-bottom: 1px solid rgba(255, 255, 255, .24) !important;
         }
         .account-profile-input:focus { border-bottom-color: rgba(255, 255, 255, .48) !important; }
-        .account-profile-save { color: #cbd5e1; }
+        .account-profile-avatar-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .25rem; margin-top: .5rem; width: 100%; }
+        .account-profile-avatar-actions button { border: 0; background: transparent; padding: .3rem .05rem; font-size: .78rem; font-weight: 700; cursor: pointer; }
+        .account-profile-cancel { color: #8e8e93; }
+        .account-profile-save { color: #3b82f6; }
         html.theme-light .account-profile-card {
             border-color: #e2e8f0;
             background: #ffffff;
@@ -226,7 +229,8 @@
         html.theme-light .account-profile-card .account-profile-email { color: #716b75 !important; }
         html.theme-light .account-profile-input { border-bottom-color: rgba(15, 23, 42, .16) !important; }
         html.theme-light .account-profile-input:focus { border-bottom-color: rgba(15, 23, 42, .30) !important; }
-        html.theme-light .account-profile-save { color: #64748b !important; }
+        html.theme-light .account-profile-cancel { color: #8e8e93 !important; }
+        html.theme-light .account-profile-save { color: #3b82f6 !important; }
         body, body * {
             user-select: none;
             -webkit-user-select: none;
@@ -1946,7 +1950,7 @@
             const rememberedPassword = getRememberedSubscriptionSyncPassword();
             container.innerHTML = `
                 <div class="account-profile-card rounded-[2rem] p-4 flex items-center gap-4">
-                    <div class="flex w-20 shrink-0 flex-col items-center gap-3">
+                    <div class="flex w-20 shrink-0 flex-col items-center">
                         <label class="relative cursor-pointer" aria-label="上傳帳戶大頭照">
                             ${avatar
                                 ? `<img id="account-avatar-preview" src="${avatar}" alt="帳戶大頭照" class="w-20 h-20 rounded-full object-cover">`
@@ -1954,7 +1958,10 @@
                             <span class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-accentBlue text-white border-2 border-darkCard flex items-center justify-center text-xs"><i class="fa-solid fa-camera"></i></span>
                             <input id="account-avatar-upload" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" onchange="handleAccountAvatarUpload(event)">
                         </label>
-                        <button type="button" onclick="saveAccountProfile()" class="account-profile-save py-1 text-sm font-bold transition active:scale-[0.98]">儲存</button>
+                        <div class="account-profile-avatar-actions">
+                            <button type="button" onclick="cancelAccountProfileEdit()" class="account-profile-cancel transition active:scale-[0.98]">取消</button>
+                            <button type="button" onclick="saveAccountProfile()" class="account-profile-save transition active:scale-[0.98]">儲存</button>
+                        </div>
                     </div>
                     <div class="min-w-0 flex-1 space-y-2">
                         <input id="subscription-account-name" name="profile-label" type="text" maxlength="60" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="名稱" value="${escapeHTML(profile.name)}" oninput="handleAccountProfileInput()" class="account-profile-input w-full border-0 bg-transparent px-0 py-1.5 text-base font-bold text-white outline-none transition placeholder:text-gray-500">
@@ -1975,6 +1982,22 @@
             accountProfileEditing = true;
             renderAccountProfile(true);
             requestAnimationFrame(() => document.getElementById('subscription-account-name')?.focus());
+        }
+
+        function cancelAccountProfileEdit() {
+            const original = accountProfileOriginalCredentials;
+            if (original) {
+                if (original.name) localStorage.setItem('subscription_account_name', original.name);
+                else localStorage.removeItem('subscription_account_name');
+                if (original.avatar) localStorage.setItem('subscription_account_avatar', original.avatar);
+                else localStorage.removeItem('subscription_account_avatar');
+                if (original.email) localStorage.setItem('subscription_sync_email', original.email);
+                else localStorage.removeItem('subscription_sync_email');
+                rememberSubscriptionSyncPassword(original.password || '');
+            }
+            accountProfileEditing = false;
+            accountProfileOriginalCredentials = null;
+            renderAccountProfile();
         }
 
         function handleAccountProfileInput() {
