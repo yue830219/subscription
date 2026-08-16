@@ -68,6 +68,12 @@
             --theme-border: 209 214 224;
             color-scheme: light;
         }
+        html.theme-switching body,
+        html.theme-switching body * {
+            transition-property: background-color, color, border-color, box-shadow, fill, stroke;
+            transition-duration: .3s;
+            transition-timing-function: ease;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #0f0f12;
@@ -1242,10 +1248,10 @@
             loadUsdToTwdRate();
             setInterval(refreshProjectedPaymentDates, 60000);
             setInterval(() => {
-                if (getThemePreference() === 'auto') applyThemePreference();
+                if (getThemePreference() === 'auto') applyThemePreference(true);
             }, 60000);
             document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible' && getThemePreference() === 'auto') applyThemePreference();
+                if (document.visibilityState === 'visible' && getThemePreference() === 'auto') applyThemePreference(true);
             });
         });
 
@@ -3237,10 +3243,20 @@
             return hour >= 6 && hour < 18 ? 'light' : 'dark';
         }
 
-        function applyThemePreference() {
+        let themeSwitchTimer = null;
+        let themeRenderTimer = null;
+
+        function applyThemePreference(animate = false) {
             const preference = getThemePreference();
             const theme = resolvedTheme(preference);
             const useLight = theme === 'light';
+            const currentlyLight = document.documentElement.classList.contains('theme-light');
+            const shouldAnimate = animate && document.readyState !== 'loading' && currentlyLight !== useLight;
+            if (shouldAnimate) {
+                window.clearTimeout(themeSwitchTimer);
+                document.documentElement.classList.add('theme-switching');
+                void document.body.offsetWidth;
+            }
             document.documentElement.classList.toggle('theme-light', useLight);
             document.documentElement.classList.toggle('dark', !useLight);
             const themeMeta = document.querySelector('meta[name="theme-color"]');
@@ -3251,16 +3267,26 @@
             if (caption) caption.textContent = preference === 'auto' ? `自動・目前${useLight ? '淺色' : '深色'}` : useLight ? '淺色' : '深色';
             renderThemePreferenceOptions();
             if (document.readyState !== 'loading') {
-                renderList();
-                renderCalendar();
-                renderAnalysis();
+                const renderThemeViews = () => {
+                    renderList();
+                    renderCalendar();
+                    renderAnalysis();
+                };
+                window.clearTimeout(themeRenderTimer);
+                if (shouldAnimate) {
+                    themeRenderTimer = window.setTimeout(renderThemeViews, 300);
+                    themeSwitchTimer = window.setTimeout(() => document.documentElement.classList.remove('theme-switching'), 340);
+                } else {
+                    document.documentElement.classList.remove('theme-switching');
+                    renderThemeViews();
+                }
             }
         }
 
         function saveThemePreference(value) {
             if (!['auto', 'light', 'dark'].includes(value)) return;
             localStorage.setItem('app_theme_preference', value);
-            applyThemePreference();
+            applyThemePreference(true);
         }
 
         function renderThemePreferenceOptions() {
